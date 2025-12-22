@@ -1,0 +1,38 @@
+name: Staging Deployment Laravel App via FTP
+ 
+on:
+  push:
+    branches:
+      - dev   # change branch if needed (e.g., master or production)
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout Repo
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. Deploy via FTP
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.APNAESHOP_FTP_SERVER }}
+          username: ${{ secrets.APNAESHOP_FTP_USERNAME }}
+          password: ${{ secrets.APNAESHOP_FTP_PASSWORD }}
+          # ✅ Use SFTP if supported (recommended), else keep ftps
+          protocol: ftps
+          passive: true
+          local-dir: ./
+          server-dir: ./   # adjust if Laravel lives in a subfolder
+          timeout: 60000   # 60s, increase if uploads are large
+          exclude: |
+            **/.git*/**
+            **/.github*/**
+            **/node_modules/**
+            **/tests/**
+            **/storage/logs/**
+            **/storage/framework/cache/**
+            **/storage/framework/sessions/**
+            **/storage/framework/views/**

@@ -1,0 +1,32 @@
+name: Production Deployment PaintingDrive Main
+
+on:
+  # change branch if needed (e.g., master or production)
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout Repo
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. Upload files to FTP server
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.PDAPP_FTP_SERVER }}
+          username: ${{ secrets.PDAPP_FTP_USERNAME }}
+          password: ${{ secrets.PDAPP_FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./  # The root directory of your repo
+          server-dir: ./  # Adjust this if your Laravel root is different
+          exclude: |
+            **/.git*
+            **/.github*
+            **/node_modules/**
+            **/tests/**
+            **/storage/logs/**
+            **/vendor/**
