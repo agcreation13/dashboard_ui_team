@@ -1,10 +1,10 @@
 <?php
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Dashboard\SiteReportController;
-use App\Http\Controllers\Leads\LeadsReportController;
-use App\Http\Controllers\Auto\DailyUpdateCheckController;
-use App\Http\Controllers\WorkCheckIncentiveController;
+use App\Http\Controllers\Dashboard\UsersListController;
+use App\Http\Controllers\Dashboard\UsersRoleListController;
+
 
 Route::get('/', function () {
       if (Auth::check()) {
@@ -22,17 +22,30 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'check.permission'])->group(function () {
 
-   // report
-   Route::get('/report/site-reports', [SiteReportController::class, 'siteReport'])->name('siteReport');
-   Route::get('/report/leads-report', [LeadsReportController::class, 'leadsReport'])->name('leadsReport');
-   Route::post('/urlredirect', [DailyUpdateCheckController::class, 'checkUpdaterun'])->name('checkUpdaterun');
+   // User-sheet 
+   Route::get('/dashboard', [UsersListController::class, 'index'])->name('dashboard');
+
+   Route::get('/master-entry/user-list', [UsersListController::class, 'index'])->name('Uers.Index');
+   Route::get('/master-entry/user-list/create', [UsersListController::class, 'create'])->name('Uers.Create');
+   Route::post('/master-entry/user-list/store', [UsersListController::class, 'store'])->name('Uers.Store');
+   Route::get('/master-entry/user-list/edit/{id}', [UsersListController::class, 'edit'])->name('Uers.Edit');
+   Route::get('/master-entry/user-list/show/{id}', [UsersListController::class, 'show'])->name('Uers.Show');
+   Route::put('/master-entry/user-list/update/{id}', [UsersListController::class, 'update'])->name('Uers.Update');
+   Route::get('/master-entry/user-list/status/{id}', [UsersListController::class, 'statusUpdate'])->name('Uers.StatusUpdate');
+   Route::get('/master-entry/user-list/delete/{id}', [UsersListController::class, 'delete'])->name('Uers.Delete');
+    
+   // User-sheet 
+   Route::get('/master-entry/user-role', [UsersRoleListController::class, 'index'])->name('UersRole.Index');
+   Route::get('/master-entry/user-role/create', [UsersRoleListController::class, 'create'])->name('UersRole.Create');
+   Route::post('/master-entry/user-role/store', [UsersRoleListController::class, 'store'])->name('UersRole.Store');
+   Route::get('/master-entry/user-role/edit/{id}', [UsersRoleListController::class, 'edit'])->name('UersRole.Edit');
+   Route::get('/master-entry/user-role/show/{id}', [UsersRoleListController::class, 'show'])->name('UersRole.Show');
+   Route::put('/master-entry/user-role/update/{id}', [UsersRoleListController::class, 'update'])->name('UersRole.Update');
+   Route::get('/master-entry/user-role/status/{id}', [UsersRoleListController::class, 'statusUpdate'])->name('UersRole.StatusUpdate');
+   Route::get('/master-entry/user-role/delete/{id}', [UsersRoleListController::class, 'delete'])->name('UersRole.Delete');
+   
    
 });
 
-Route::get('/check-incentive', [WorkCheckIncentiveController::class, 'index'])->name('checkIncentive.index');
-Route::post('/check-incentive', [WorkCheckIncentiveController::class, 'getData'])->name('checkIncentive.getData');
 
 require __DIR__.'/auth.php';
-require __DIR__.'/webDashboard.php';
-require __DIR__.'/webDashboardLeads.php';
-require __DIR__.'/webDashboardWork.php';

@@ -41,44 +41,8 @@
                     $isWorkSheetAppEntry = collect($isWorkSheetAppEntry)->contains(fn($route) => Request::is($route));
                     $userRole = Auth::user()->role;
                 @endphp
-                @if ($userRole == 'admin' || $userRole == 'superadmin' || $userRole == 'supervisor')
-                    {{-- Standalone App --}}
-                    <li class="dropdown {{ $isStandaloneActive ? 'show' : '' }}">
-                        <a href="javascript:;" class="dropdown-toggle">
-                            <span class="micon dw dw-property"></span>
-                            <span class="mtext">Standalone App</span>
-                        </a>
-                        <ul class="submenu {{ $isStandaloneActive ? 'show' : '' }}"
-                            style="{{ $isStandaloneActive ? 'display:block;' : '' }}">
-                            <li><a href="{{ url('/dashboard/') }}">Dashboard</a></li>
-                            <li><a href="{{ url('/dashboard/site-details') }}">Site Details</a></li>
-                            @if ($userRole == 'admin' || $userRole == 'superadmin')
-                            <li><a href="{{ url('/dashboard/daily-sheet') }}">Daily Entry Sheet</a></li>
-                 
-                                <li><a href="{{ url('/dashboard/site-bill') }}">Site Bill</a></li>
-                                <li><a href="{{ url('/dashboard/payment-receipt') }}">Payment Receipt</a></li>
-                                     @if ($userRole == 'superadmin')
-                                <li><a href="{{ route('completedSites.Index') }}">Completed Site</a></li>
-                            @endif
-                            @endif
-                        </ul>
-                    </li>
-                @endif
-                @if ($userRole == 'representative' || $userRole == 'admin' || $userRole == 'superadmin')
-                    {{-- Online Software --}}
-                    <li class="dropdown {{ $isOnlineSoftwareActive ? 'show' : '' }}">
-                        <a href="javascript:;" class="dropdown-toggle">
-                            <span class="micon dw dw-internet-1"></span>
-                            <span class="mtext">Online Software</span>
-                        </a>
-                        <ul class="submenu {{ $isOnlineSoftwareActive ? 'show' : '' }}"
-                            style="{{ $isOnlineSoftwareActive ? 'display:block;' : '' }}">
-
-                            <li><a href="{{ url('/dashboard-leads') }}">Dashboard</a></li>
-                            <li><a href="{{ route('leadsSheet.Index') }}">Leads List</a></li>
-                        </ul>
-                    </li>
-                @endif
+         
+            
                 @if ($userRole == 'superadmin')
                     {{-- Online Software --}}
                     <li class="dropdown {{ $isMasterEntry ? 'show' : '' }}">
@@ -88,39 +52,12 @@
                         </a>
                         <ul class="submenu {{ $isMasterEntry ? 'show' : '' }}"
                             style="{{ $isMasterEntry ? 'display:block;' : '' }}">
+                                 <li><a href="{{ url('/dashboard/') }}">Dashboard</a></li>
                             @if (env('MENU_SHOW') == 'Yes')
                                 <li><a href="{{ route('UersRole.Index') }}">User Role</a></li>
                             @endif
-                            <li><a href="{{ route('labourRoles.Index') }}">Labour Role</a></li>
-                            <li><a href="{{ route('labour.Index')  }}">Labour List</a></li>
-                            <li><a href="{{ route('material.Index') }}">Material List</a></li>
+                          
                             <li><a href="{{ route('Uers.Index') }}">User List</a></li>
-                        </ul>
-                    </li>
-                    @if ($userRole == 'supervisor' || $userRole == 'admin' || $userRole == 'superadmin')
-                    <li class="dropdown {{ $isWorkSheetAppEntry ? 'show' : '' }}">
-                        <a href="javascript:;" class="dropdown-toggle">
-                            <span class="micon dw dw-list"></span>
-                            <span class="mtext">Work Sheet App</span>
-                        </a>
-                        <ul class="submenu {{ $isWorkSheetAppEntry ? 'show' : '' }}"
-                            style="{{ $isWorkSheetAppEntry ? 'display:block;' : '' }}">
-                            <li><a href="{{ route('worksheet') }}">Dashboard</a></li>
-                            <li><a href="{{ route('workSheet.Index') }}">Rome List</a></li>
-                            <li><a href="{{ route('workKittyAssignment.Index') }}">Work Assignment</a></li>
-                            <li><a href="{{ route('workProductList.Index') }}">Work Product List</a></li>
-                        </ul>
-                    </li>
-                    @endif
-                    <li class="dropdown {{ $isReportEntry ? 'show' : '' }}">
-                        <a href="javascript:;" class="dropdown-toggle">
-                            <span class="micon dw dw-analytics-3"></span>
-                            <span class="mtext">View Report</span>
-                        </a>
-                        <ul class="submenu {{ $isReportEntry ? 'show' : '' }}"
-                            style="{{ $isReportEntry ? 'display:block;' : '' }}">
-                            <li><a href="{{ route('leadsReport') }}">Lead Report</a></li>
-                            <li><a href="{{ route('siteReport') }}">Site Report</a></li>
                         </ul>
                     </li>
                 @endif

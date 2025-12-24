@@ -174,7 +174,7 @@
                 </div>
             </div>
             <div class="reset-options pt-30 text-center">
-                <form action="{{ route('checkUpdaterun') }}" method="post">
+                <form method="POST" action="/">
                 <button class="btn btn-danger" id="reset-settings">Reset Settings</button>
                     @csrf
                     @method('post')
