@@ -35,7 +35,7 @@ color: #fff !important;
 
 <div class="footer-wrap pd-20 mb-20 card-box">
 
-       © 2025 PD Management App. 
+       © 2025 ERP App. 
     All Rights Reserved by <a href="#" target="_blank">AG Creation</a>
 
  </div>

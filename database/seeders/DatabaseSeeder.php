@@ -18,15 +18,15 @@ class DatabaseSeeder extends Seeder
 
         
 
-        // User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        //     'password' => Hash::make('password'),
-        //     'role' => 'user',
-        //     'phone_no' => '000-000-0000',
-        //     'status' => 'active',
-        //     'profile_image' => 'default',
-        // ]);
+        User::factory()->create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => Hash::make('password'),
+            'role' => 'user',
+            'phone_no' => '000-000-0000',
+            'status' => 'active',
+            'profile_image' => 'default',
+        ]);
         $this->call([
             // LabourRoleSeeder::class,
             // LabourSeeder::class,

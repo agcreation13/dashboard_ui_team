@@ -21,14 +21,6 @@
 					</div>
 				</div>
 			</div>
-       @include('components.dashboard.dashboardComponent',[$SiteDetails])
-	   @if(Auth::user()->role =='admin' || Auth::user()->role =='superadmin')
-	       @if (env('MENU_SHOW') == 'Yes')
-		   @include('components.dashboard.upcomingPaymentsComponent-local',[$upcomingPayments])
-		   @else
-		   @include('components.dashboard.upcomingPaymentsComponent',[$upcomingPayments])
-		   @endif
-
-	   @endif
+   
 @endsection
 
