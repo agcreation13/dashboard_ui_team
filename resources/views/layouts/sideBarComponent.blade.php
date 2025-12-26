@@ -34,17 +34,43 @@
                     $isMasterEntry = ['master-entry*'];
                     $isReportEntry = ['report*'];
                     $isWorkSheetAppEntry = ['worksheet*'];
+                    $isInventory = ['inventory*'];
                     $isStandaloneActive = collect($standaloneRoutes)->contains(fn($route) => Request::is($route));
                     $isOnlineSoftwareActive = collect($onlineSoftware)->contains(fn($route) => Request::is($route));
                     $isMasterEntry = collect($isMasterEntry)->contains(fn($route) => Request::is($route));
                     $isReportEntry = collect($isReportEntry)->contains(fn($route) => Request::is($route));
                     $isWorkSheetAppEntry = collect($isWorkSheetAppEntry)->contains(fn($route) => Request::is($route));
+                    $isInventoryActive = collect($isInventory)->contains(fn($route) => Request::is($route));
                     $userRole = Auth::user()->role;
                 @endphp
          
             
+                {{-- Dashboard --}}
+                <li>
+                    <a href="{{ url('/dashboard') }}" class="dropdown-toggle no-arrow">
+                        <span class="micon dw dw-house-1"></span>
+                        <span class="mtext">Dashboard</span>
+                    </a>
+                </li>
+
+                {{-- Inventory Management --}}
+                <li class="dropdown {{ $isInventoryActive ? 'show' : '' }}">
+                    <a href="javascript:;" class="dropdown-toggle">
+                        <span class="micon dw dw-box"></span>
+                        <span class="mtext">Inventory</span>
+                    </a>
+                    <ul class="submenu {{ $isInventoryActive ? 'show' : '' }}"
+                        style="{{ $isInventoryActive ? 'display:block;' : '' }}">
+                        <li><a href="{{ route('categories.index') }}">Categories</a></li>
+                        <li><a href="{{ route('products.index') }}">Products</a></li>
+                        <li><a href="{{ route('invoices.index') }}">Invoices</a></li>
+                        <li><a href="{{ route('customers.index') }}">Customers</a></li>
+                        <li><a href="{{ route('reports.index') }}">Reports</a></li>
+                    </ul>
+                </li>
+
                 @if ($userRole == 'superadmin')
-                    {{-- Online Software --}}
+                    {{-- Master Entry --}}
                     <li class="dropdown {{ $isMasterEntry ? 'show' : '' }}">
                         <a href="javascript:;" class="dropdown-toggle">
                             <span class="micon dw dw-settings"></span>
@@ -52,11 +78,9 @@
                         </a>
                         <ul class="submenu {{ $isMasterEntry ? 'show' : '' }}"
                             style="{{ $isMasterEntry ? 'display:block;' : '' }}">
-                                 <li><a href="{{ url('/dashboard/') }}">Dashboard</a></li>
                             @if (env('MENU_SHOW') == 'Yes')
                                 <li><a href="{{ route('UersRole.Index') }}">User Role</a></li>
                             @endif
-                          
                             <li><a href="{{ route('Uers.Index') }}">User List</a></li>
                         </ul>
                     </li>
