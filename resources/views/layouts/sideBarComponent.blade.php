@@ -66,13 +66,13 @@
                         <li><a href="{{ route('products.index') }}">Products</a></li>
                         <li><a href="{{ route('invoices.index') }}">Invoices</a></li>
                         <li><a href="{{ route('customers.index') }}">Customers</a></li>
-                        <li><a href="{{ route('reports.index') }}">Reports</a></li>
+                        <!-- <li><a href="{{ route('reports.index') }}">Reports</a></li> -->
                     </ul>
                 </li>
 
                 @if ($userRole == 'superadmin')
                     {{-- Master Entry --}}
-                    <li class="dropdown {{ $isMasterEntry ? 'show' : '' }}">
+                    <!-- <li class="dropdown {{ $isMasterEntry ? 'show' : '' }}">
                         <a href="javascript:;" class="dropdown-toggle">
                             <span class="micon dw dw-settings"></span>
                             <span class="mtext">Master Entry</span>
@@ -84,7 +84,7 @@
                             @endif
                             <li><a href="{{ route('Uers.Index') }}">User List</a></li>
                         </ul>
-                    </li>
+                    </li> -->
                 @endif
                 {{-- user-list --}}
             </ul>
