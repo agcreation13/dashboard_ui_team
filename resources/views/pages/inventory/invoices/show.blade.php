@@ -59,9 +59,9 @@
 
             <!-- Product Details Table -->
             <div class="table-responsive">
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
                             <th class="text-center">Sr No.</th>
                             <th class="text-center">HSN</th>
                             <th>Product Name</th>
@@ -74,14 +74,14 @@
                             <th class="text-right">GST%</th>
                             <th class="text-right">G.AMT</th>
                             <th class="text-right">NET AMT</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                    </tr>
+                </thead>
+                <tbody>
                         @foreach($invoice->items as $index => $item)
-                        <tr>
+                    <tr>
                             <td class="text-center">{{ $index + 1 }}</td>
                             <td class="text-center">{{ $item->hsn ?? ($item->product->hsn ?? '') }}</td>
-                            <td>{{ $item->product_name }}</td>
+                        <td>{{ $item->product_name }}</td>
                             <td class="text-center">{{ $item->pack ?? '' }}</td>
                             <td class="text-center">{{ $item->quantity }}</td>
                             <td class="text-center">{{ $item->free_quantity ?? 0 }}</td>
@@ -91,9 +91,9 @@
                             <td class="text-right">{{ number_format($item->gst_percentage ?? 0, 2) }}%</td>
                             <td class="text-right">{{ number_format($item->gst_amount ?? 0, 2) }}</td>
                             <td class="text-right">{{ number_format($item->net_amount ?? $item->line_total, 2) }}</td>
-                        </tr>
-                        @endforeach
-                    </tbody>
+                    </tr>
+                    @endforeach
+                </tbody>
                 </table>
             </div>
 
@@ -121,24 +121,24 @@
                         <tr>
                             <td><strong>TOTALAM:</strong></td>
                             <td class="text-right">{{ number_format($invoice->subtotal, 2) }}</td>
-                        </tr>
-                        <tr>
+                    </tr>
+                    <tr>
                             <td><strong>TOTAL AMT:</strong></td>
                             <td class="text-right">{{ number_format($invoice->subtotal, 2) }}</td>
-                        </tr>
-                        <tr>
+                    </tr>
+                    <tr>
                             <td><strong>AD/LS AMT:</strong></td>
                             <td class="text-right">{{ number_format($invoice->additional_amount ?? 0, 2) }}</td>
-                        </tr>
-                        <tr>
+                    </tr>
+                    <tr>
                             <td><strong>ROUND OFF:</strong></td>
                             <td class="text-right">{{ number_format($invoice->round_off ?? 0, 2) }}</td>
                         </tr>
                         <tr class="table-primary">
                             <td><strong>GRAND TOTAL:</strong></td>
                             <td class="text-right"><strong>{{ number_format($invoice->grand_total, 2) }}</strong></td>
-                        </tr>
-                    </table>
+                    </tr>
+            </table>
                 </div>
             </div>
 
