@@ -61,6 +61,7 @@
                     </a>
                     <ul class="submenu {{ $isInventoryActive ? 'show' : '' }}"
                         style="{{ $isInventoryActive ? 'display:block;' : '' }}">
+                        <li><a href="{{ route('inventory.dashboard') }}">Dashboard</a></li>
                         <li><a href="{{ route('categories.index') }}">Categories</a></li>
                         <li><a href="{{ route('products.index') }}">Products</a></li>
                         <li><a href="{{ route('invoices.index') }}">Invoices</a></li>
