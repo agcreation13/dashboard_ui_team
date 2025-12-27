@@ -11,9 +11,11 @@ use App\Models\Customer;
 use Illuminate\Support\Facades\DB;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use App\Traits\AuditLogTrait;
 
 class InvoiceController extends Controller
 {
+    use AuditLogTrait;
     /**
      * Display a listing of the resource.
      */
@@ -122,7 +124,7 @@ class InvoiceController extends Controller
 
             // Get or create customer
             if ($request->customer_id) {
-                $customer = Customer::findOrFail($request->customer_id);
+            $customer = Customer::findOrFail($request->customer_id);
                 // Update customer with new information if provided
                 $customer->update([
                     'name' => $request->customer_name,
@@ -223,6 +225,14 @@ class InvoiceController extends Controller
                 $product->save();
             }
 
+            // Log audit
+            $invoiceData = $invoice->fresh()->toArray();
+            $itemsData = $invoice->items->toArray();
+            AuditLogTrait::logAction('create', $invoice, null, [
+                'invoice' => $invoiceData,
+                'items' => $itemsData
+            ]);
+
             DB::commit();
 
             return redirect()->route('invoices.show', $invoice->id)
@@ -244,6 +254,215 @@ class InvoiceController extends Controller
     {
         $invoice = Invoice::with(['customer', 'items.product'])->findOrFail($id);
         return view('pages.inventory.invoices.show', compact('invoice'));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit($id)
+    {
+        $invoice = Invoice::with(['customer', 'items.product'])->findOrFail($id);
+        
+        // Don't allow editing cancelled invoices
+        if ($invoice->status === 'cancelled') {
+            return redirect()->route('invoices.show', $invoice->id)
+                             ->with('bg-color', 'warning')
+                             ->with('success', 'Cannot edit cancelled invoice.');
+        }
+        
+        $products = Product::where('status', 'active')->with('category')->get();
+        $customers = Customer::orderBy('name')->get();
+        
+        return view('pages.inventory.invoices.edit', compact('invoice', 'products', 'customers'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, $id)
+    {
+        $invoice = Invoice::with('items')->findOrFail($id);
+        
+        // Don't allow updating cancelled invoices
+        if ($invoice->status === 'cancelled') {
+            return redirect()->route('invoices.show', $invoice->id)
+                             ->with('bg-color', 'warning')
+                             ->with('success', 'Cannot update cancelled invoice.');
+        }
+        
+        $validated = $request->validate([
+            'invoice_date' => 'required|date',
+            'eway_bill' => 'nullable|string|max:100',
+            'mr_no' => 'nullable|string|max:100',
+            's_man' => 'nullable|string|max:100',
+            'customer_id' => 'nullable|exists:customers,id',
+            'customer_name' => 'required|string|max:255',
+            'customer_mobile' => 'nullable|string|max:20',
+            'customer_email' => 'nullable|email|max:255',
+            'customer_address' => 'nullable|string',
+            'customer_gstin' => 'nullable|string|max:50',
+            'customer_state' => 'nullable|string|max:100',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.hsn' => 'nullable|string|max:50',
+            'items.*.pack' => 'nullable|string|max:100',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.free_quantity' => 'nullable|integer|min:0',
+            'items.*.mrp' => 'nullable|numeric|min:0',
+            'items.*.rate' => 'required|numeric|min:0',
+            'items.*.discount_percentage' => 'nullable|numeric|min:0|max:100',
+            'items.*.gst_percentage' => 'nullable|numeric|min:0|max:100',
+            'items.*.gst_amount' => 'nullable|numeric|min:0',
+            'items.*.net_amount' => 'nullable|numeric|min:0',
+            'subtotal' => 'required|numeric|min:0',
+            'cgst_percentage' => 'nullable|numeric|min:0|max:100',
+            'cgst_amount' => 'nullable|numeric|min:0',
+            'sgst_percentage' => 'nullable|numeric|min:0|max:100',
+            'sgst_amount' => 'nullable|numeric|min:0',
+            'additional_amount' => 'nullable|numeric',
+            'round_off' => 'nullable|numeric',
+            'grand_total' => 'required|numeric|min:0',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Store old data for audit log
+            $oldInvoiceData = $invoice->toArray();
+            $oldItemsData = $invoice->items->toArray();
+            
+            // Restore stock from old invoice items
+            foreach ($invoice->items as $oldItem) {
+                $product = Product::find($oldItem->product_id);
+                if ($product) {
+                    $product->quantity += $oldItem->quantity;
+                    $product->save();
+                }
+            }
+            
+            // Get or create customer
+            if ($request->customer_id) {
+                $customer = Customer::findOrFail($request->customer_id);
+                $customer->update([
+                    'name' => $request->customer_name,
+                    'phone' => $request->customer_mobile,
+                    'email' => $request->customer_email,
+                    'address' => $request->customer_address,
+                    'gstin' => $request->customer_gstin,
+                    'state' => $request->customer_state,
+                ]);
+            } else {
+                $customer = Customer::create([
+                    'name' => $request->customer_name,
+                    'phone' => $request->customer_mobile,
+                    'email' => $request->customer_email,
+                    'address' => $request->customer_address,
+                    'gstin' => $request->customer_gstin,
+                    'state' => $request->customer_state,
+                ]);
+            }
+
+            // Get default seller details
+            $sellerDetails = $this->getDefaultSellerDetails();
+            $totalTax = ($request->cgst_amount ?? 0) + ($request->sgst_amount ?? 0);
+
+            // Update invoice
+            $invoice->update([
+                'invoice_date' => $request->invoice_date,
+                'seller_name' => $sellerDetails['name'],
+                'seller_address' => $sellerDetails['address'],
+                'seller_email' => $sellerDetails['email'],
+                'seller_phone' => $sellerDetails['phone'],
+                'seller_gstin' => $sellerDetails['gstin'],
+                'eway_bill' => $request->eway_bill,
+                'mr_no' => $request->mr_no,
+                's_man' => $request->s_man,
+                'customer_id' => $customer->id,
+                'customer_name' => $request->customer_name,
+                'customer_mobile' => $request->customer_mobile,
+                'customer_email' => $request->customer_email,
+                'customer_address' => $request->customer_address,
+                'customer_gstin' => $request->customer_gstin,
+                'customer_state' => $request->customer_state,
+                'subtotal' => $request->subtotal,
+                'discount' => 0,
+                'tax' => $totalTax,
+                'cgst_percentage' => $request->cgst_percentage ?? 0,
+                'cgst_amount' => $request->cgst_amount ?? 0,
+                'sgst_percentage' => $request->sgst_percentage ?? 0,
+                'sgst_amount' => $request->sgst_amount ?? 0,
+                'additional_amount' => $request->additional_amount ?? 0,
+                'round_off' => $request->round_off ?? 0,
+                'grand_total' => $request->grand_total,
+            ]);
+
+            // Delete old invoice items
+            $invoice->items()->delete();
+
+            // Create new invoice items and update stock
+            foreach ($request->items as $item) {
+                $product = Product::findOrFail($item['product_id']);
+                
+                // Check stock availability
+                if ($product->quantity < $item['quantity']) {
+                    DB::rollBack();
+                    return redirect()->back()
+                                     ->with('bg-color', 'danger')
+                                     ->with('success', "Insufficient stock for {$product->name}. Available: {$product->quantity}")
+                                     ->withInput();
+                }
+                
+                // Calculate line total (net amount)
+                $lineTotal = $item['net_amount'] ?? 0;
+                
+                InvoiceItem::create([
+                    'invoice_id' => $invoice->id,
+                    'product_id' => $item['product_id'],
+                    'product_name' => $product->name,
+                    'hsn' => $item['hsn'] ?? $product->hsn ?? '',
+                    'pack' => $item['pack'] ?? $product->pack ?? '',
+                    'quantity' => $item['quantity'],
+                    'free_quantity' => $item['free_quantity'] ?? 0,
+                    'mrp' => $item['mrp'] ?? $product->mrp ?? 0,
+                    'rate' => $item['rate'],
+                    'discount' => 0, // Not used, using discount_percentage
+                    'discount_percentage' => $item['discount_percentage'] ?? 0,
+                    'tax' => $item['gst_amount'] ?? 0,
+                    'gst_percentage' => $item['gst_percentage'] ?? 0,
+                    'gst_amount' => $item['gst_amount'] ?? 0,
+                    'net_amount' => $item['net_amount'] ?? 0,
+                    'line_total' => $lineTotal,
+                ]);
+
+                // Update product stock
+                $product->quantity -= $item['quantity'];
+                $product->save();
+            }
+
+            // Log audit
+            $newInvoiceData = $invoice->fresh()->toArray();
+            $newItemsData = $invoice->items->toArray();
+            \App\Traits\AuditLogTrait::logAction('update', $invoice, [
+                'invoice' => $oldInvoiceData,
+                'items' => $oldItemsData
+            ], [
+                'invoice' => $newInvoiceData,
+                'items' => $newItemsData
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('invoices.show', $invoice->id)
+                             ->with('bg-color', 'success')
+                             ->with('success', 'Invoice updated successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Invoice update error: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            return redirect()->back()
+                             ->with('bg-color', 'danger')
+                             ->with('success', 'Error updating invoice: ' . $e->getMessage())
+                             ->withInput();
+        }
     }
 
     /**

@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Inventory;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Category;
+use App\Traits\AuditLogTrait;
 
 class CategoryController extends Controller
 {
+    use AuditLogTrait;
     /**
      * Display a listing of the resource.
      */
@@ -39,6 +41,9 @@ class CategoryController extends Controller
         $category->name = $request->name;
         $category->status = $request->status;
         $category->save();
+
+        // Log audit
+        AuditLogTrait::logAction('create', $category, null, $category->toArray());
 
         return redirect()->route('categories.index')
                          ->with('bg-color', 'success')
@@ -74,9 +79,15 @@ class CategoryController extends Controller
         ]);
 
         $category = Category::findOrFail($id);
+        $oldData = $category->toArray();
+        
         $category->name = $request->name;
         $category->status = $request->status;
         $category->save();
+
+        // Log audit
+        $newData = $category->fresh()->toArray();
+        AuditLogTrait::logAction('update', $category, $oldData, $newData);
 
         return redirect()->route('categories.index')
                          ->with('bg-color', 'success')

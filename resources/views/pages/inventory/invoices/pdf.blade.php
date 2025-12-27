@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>GST Invoice #{{ $invoice->invoice_number }}</title>
+    <title>{{ $invoice->status === 'cancelled' ? 'CANCELLED INVOICE' : 'INVOICE' }} #{{ $invoice->invoice_number }}</title>
     <style>
         * {
             margin: 0;
@@ -115,7 +115,7 @@
             </div>
             
             <div class="invoice-details-section" style="text-align: left;">
-                <div class="gst-invoice-title">GST INVOICE</div>
+                <div class="gst-invoice-title">{{ $invoice->status === 'cancelled' ? 'CANCELLED INVOICE' : 'INVOICE' }}</div>
                 <div><strong>Invoice No.:</strong> {{ $invoice->invoice_number }}</div>
                 <div><strong>Date:</strong> {{ $invoice->invoice_date->format('d/m/Y') }}</div>
                 <div><strong>E-way Bill:</strong> {{ $invoice->eway_bill ?? '' }}</div>

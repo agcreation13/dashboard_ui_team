@@ -45,14 +45,7 @@
         </div> --}}
 
         {{-- success show allert --}}
-        @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <strong>Success!</strong> {{ session('success') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-        @endif
+      
         {{-- header import --}}
         @if(Auth::check())
         @include('layouts.headerComponent')
@@ -62,6 +55,14 @@
         <div class="mobile-menu-overlay"></div>
     
         <div class="main-container">
+        @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <strong>Success!</strong> {{ session('success') }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        @endif
             <div class="pd-ltr-10">
                 {{-- Pages load --}}
                 @yield('main_content')

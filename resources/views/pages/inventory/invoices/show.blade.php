@@ -16,6 +16,9 @@
             </nav>
         </div>
         <div class="col-md-6 text-right col-right">
+            @if($invoice->status == 'active')
+                <a href="{{ route('invoices.edit', $invoice->id) }}" class="btn btn-sm border border-primary text-primary p-2 mr-2" style="font-size: 14px; font-weight: 500; min-width: 80px;"><i class="dw dw-edit-1"></i> Edit</a>
+            @endif
             <a href="{{ route('invoices.pdf', $invoice->id) }}" class="btn btn-sm border border-danger text-danger p-2 mr-2" style="font-size: 14px; font-weight: 500; min-width: 80px;" target="_blank"><i class="dw dw-file-38"></i> PDF</a>
             <a href="{{ route('invoices.print', $invoice->id) }}" class="btn btn-sm border border-secondary text-secondary p-2 mr-2" style="font-size: 14px; font-weight: 500; min-width: 80px;" target="_blank"><i class="dw dw-print"></i> Print</a>
             @if($invoice->status == 'active')

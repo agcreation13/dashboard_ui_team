@@ -70,7 +70,22 @@
         $cancelUrl = route('invoices.cancel', $invoice->id);
 
         $isCancelled = $invoice->status == 'cancelled';
+        $editUrl = route('invoices.edit', $invoice->id);
         
+        // Edit button - same pattern as Cancel button
+        if($isCancelled) {
+            // Disabled edit button for cancelled invoices
+            $editButton = <<<HTML
+                <span data-toggle="tooltip" data-placement="top" data-original-title="Cannot edit cancelled invoice" class="btn btn-outline-success btn-sm disabled" style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"><i class="dw dw-edit-1"></i></span>
+        HTML;
+        } else {
+            // Active edit button for active invoices
+            $editButton = <<<HTML
+                <a href="{$editUrl}" data-toggle="tooltip" data-placement="top" data-original-title="Edit" class="btn btn-outline-success btn-sm"><i class="dw dw-edit-1"></i></a>
+        HTML;
+        }
+        
+        // Cancel button
         if($isCancelled) {
             // Disabled cancel button for cancelled invoices
             $cancelButton = <<<HTML
@@ -86,6 +101,7 @@
         $actions = <<<HTML
             <div class="btn-group">
                 <a href="{$showUrl}" data-toggle="tooltip" data-placement="top" data-original-title="View" class="btn btn-outline-info btn-sm"><i class="dw dw-eye"></i></a>
+                {$editButton}
                 <a href="{$pdfUrl}" data-toggle="tooltip" data-placement="top" data-original-title="PDF" class="btn btn-outline-primary btn-sm" target="_blank"><i class="dw dw-file-38"></i></a>
                 <a href="{$printUrl}" data-toggle="tooltip" data-placement="top" data-original-title="Print" class="btn btn-outline-secondary btn-sm" target="_blank"><i class="dw dw-print"></i></a>
                 {$cancelButton}

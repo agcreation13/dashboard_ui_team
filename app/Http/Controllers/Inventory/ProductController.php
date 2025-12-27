@@ -11,9 +11,11 @@ use App\Exports\ProductsExport;
 use App\Exports\ProductsSampleExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Storage;
+use App\Traits\AuditLogTrait;
 
 class ProductController extends Controller
 {
+    use AuditLogTrait;
     /**
      * Display a listing of the resource.
      */
@@ -144,7 +146,10 @@ class ProductController extends Controller
             $data['sku'] = $this->generateSKU($data['name'], $data['category_id']);
         }
 
-        Product::create($data);
+        $product = Product::create($data);
+
+        // Log audit
+        AuditLogTrait::logAction('create', $product, null, $product->toArray());
 
         return redirect()->route('products.index')
                          ->with('bg-color', 'success')
@@ -191,7 +196,13 @@ class ProductController extends Controller
         ]);
 
         $product = Product::findOrFail($id);
+        $oldData = $product->toArray();
+        
         $product->update($request->all());
+
+        // Log audit
+        $newData = $product->fresh()->toArray();
+        AuditLogTrait::logAction('update', $product, $oldData, $newData);
 
         return redirect()->route('products.index')
                          ->with('bg-color', 'success')
