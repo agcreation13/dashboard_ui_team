@@ -41,6 +41,7 @@
 
             <div class="col-md-6 form-group">
                 <label>Category <sup class="text-danger">*</sup></label>
+                <input class="form-control" type="hidden" readonly name="sku" id="sku_input" value="{{ old('sku') }}" placeholder="Leave empty for auto-generation">
                 <select name="category_id" class="form-control" required>
                     <option value="">-- Select Category --</option>
                     @foreach($categories as $category)
@@ -50,11 +51,7 @@
                 @error('category_id') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
-            <div class="col-md-6 form-group">
-                <label>SKU / Product Code <sup class="text-danger">*</sup></label>
-                <input class="form-control" type="text" name="sku" value="{{ old('sku') }}" required placeholder="Enter SKU">
-                @error('sku') <small class="text-danger">{{ $message }}</small> @enderror
-            </div>
+           
 
             <div class="col-md-6 form-group">
                 <label>HSN Code</label>
@@ -62,49 +59,49 @@
                 @error('hsn') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
-            <div class="col-md-6 form-group">
+            <div class="col-md-3 form-group">
                 <label>PACK</label>
                 <input class="form-control" type="text" name="pack" value="{{ old('pack') }}" placeholder="e.g., 60 cap, 1 kg, etc.">
                 @error('pack') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
-            <div class="col-md-6 form-group">
+            <div class="col-md-3 form-group">
                 <label>Unit <sup class="text-danger">*</sup></label>
                 <input class="form-control" type="text" name="unit" value="{{ old('unit', 'pcs') }}" required placeholder="pcs, kg, box, etc.">
                 @error('unit') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
-            <div class="col-md-6 form-group">
+            <div class="col-md-2 form-group">
                 <label>Purchase Price <sup class="text-danger">*</sup></label>
                 <input class="form-control" type="number" step="0.01" name="purchase_price" value="{{ old('purchase_price') }}" required placeholder="0.00" min="0">
                 @error('purchase_price') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
-            <div class="col-md-6 form-group">
+            <div class="col-md-2 form-group">
                 <label>Selling Price <sup class="text-danger">*</sup></label>
                 <input class="form-control" type="number" step="0.01" name="selling_price" value="{{ old('selling_price') }}" required placeholder="0.00" min="0">
                 @error('selling_price') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
-            <div class="col-md-6 form-group">
-                <label>MRP (Maximum Retail Price)</label>
+            <div class="col-md-2 form-group">
+                <label>MRP</label>
                 <input class="form-control" type="number" step="0.01" name="mrp" value="{{ old('mrp') }}" placeholder="0.00" min="0">
                 @error('mrp') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
-            <div class="col-md-6 form-group">
+            <div class="col-md-2 form-group">
                 <label>GST Percentage (%)</label>
                 <input class="form-control" type="number" step="0.01" name="gst_percentage" value="{{ old('gst_percentage', 0) }}" placeholder="0.00" min="0" max="100">
                 @error('gst_percentage') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
-            <div class="col-md-6 form-group">
+            <div class="col-md-2 form-group">
                 <label>Quantity / Stock <sup class="text-danger">*</sup></label>
                 <input class="form-control" type="number" name="quantity" value="{{ old('quantity', 0) }}" required placeholder="0" min="0">
                 @error('quantity') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
-            <div class="col-md-6 form-group">
+            <div class="col-md-2 form-group">
                 <label>Status <sup class="text-danger">*</sup></label>
                 <select name="status" class="form-control" required>
                     <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>Active</option>
@@ -121,4 +118,46 @@
     </form>
 </div>
 @endsection
+
+@push('js')
+<script>
+    // Auto-generate SKU preview when product name and category are entered
+    document.addEventListener('DOMContentLoaded', function() {
+        const nameInput = document.querySelector('input[name="name"]');
+        const categorySelect = document.querySelector('select[name="category_id"]');
+        const skuInput = document.getElementById('sku_input');
+        
+        function updateSKUPreview() {
+            if (!skuInput || skuInput.value.trim() !== '') {
+                return; // Don't update if user has entered a value
+            }
+            
+            const productName = nameInput ? nameInput.value.trim() : '';
+            const categoryId = categorySelect ? categorySelect.value : '';
+            const categoryName = categorySelect ? categorySelect.options[categorySelect.selectedIndex].text : '';
+            
+            if (productName.length >= 3 && categoryId) {
+                // Get first 3 letters of product name
+                const productPart = productName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase();
+                // Get first 3 letters of category name
+                const categoryPart = categoryName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase();
+                
+                if (productPart.length >= 3 && categoryPart.length >= 3) {
+                    // Show preview (will be finalized on server with random part)
+                    skuInput.placeholder = 'Will be: SKU-XX-' + productPart + '-' + categoryPart + '-XX';
+                }
+            }
+        }
+        
+        if (nameInput) {
+            nameInput.addEventListener('blur', updateSKUPreview);
+            nameInput.addEventListener('input', updateSKUPreview);
+        }
+        
+        if (categorySelect) {
+            categorySelect.addEventListener('change', updateSKUPreview);
+        }
+    });
+</script>
+@endpush
 

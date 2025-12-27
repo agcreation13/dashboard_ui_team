@@ -62,6 +62,62 @@ class ProductController extends Controller
     }
 
     /**
+     * Generate SKU automatically
+     * Format: SKU-{number}-{product_3_letters}-{category_3_letters}-{random_2-3_letters}
+     */
+    private function generateSKU($productName, $categoryId)
+    {
+        // Get the next sequential number
+        $lastProduct = Product::orderBy('id', 'desc')->first();
+        $nextNumber = $lastProduct ? ($lastProduct->id + 1) : 1;
+        $numberPart = str_pad($nextNumber, 2, '0', STR_PAD_LEFT);
+        
+        // Get first 3 letters of product name (uppercase, remove spaces and special chars)
+        $productNameClean = preg_replace('/[^a-zA-Z0-9]/', '', $productName);
+        if (strlen($productNameClean) >= 3) {
+            $productPart = strtoupper(substr($productNameClean, 0, 3));
+        } else {
+            // If product name is too short, use random 3 characters
+            $productPart = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 3));
+        }
+        
+        // Get category name 3 letters
+        $category = Category::find($categoryId);
+        $categoryName = $category ? $category->name : 'CAT';
+        $categoryNameClean = preg_replace('/[^a-zA-Z0-9]/', '', $categoryName);
+        if (strlen($categoryNameClean) >= 3) {
+            $categoryPart = strtoupper(substr($categoryNameClean, 0, 3));
+        } else {
+            // If category name is too short, use random 3 characters
+            $categoryPart = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 3));
+        }
+        
+        // Generate random 2-3 letter string
+        $randomLength = rand(2, 3);
+        $randomPart = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, $randomLength));
+        
+        // Generate SKU: SKU-{number}-{product}-{category}-{random}
+        $sku = 'SKU-' . $numberPart . '-' . $productPart . '-' . $categoryPart . '-' . $randomPart;
+        
+        // Ensure uniqueness
+        $counter = 1;
+        $originalSku = $sku;
+        while (Product::where('sku', $sku)->exists()) {
+            // If duplicate, regenerate random part
+            $randomPart = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, $randomLength));
+            $sku = 'SKU-' . $numberPart . '-' . $productPart . '-' . $categoryPart . '-' . $randomPart;
+            $counter++;
+            // Safety check to avoid infinite loop
+            if ($counter > 100) {
+                $sku = $originalSku . '-' . time();
+                break;
+            }
+        }
+        
+        return $sku;
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
@@ -69,7 +125,7 @@ class ProductController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
-            'sku' => 'required|string|unique:products,sku',
+            'sku' => 'nullable|string|unique:products,sku',
             'hsn' => 'nullable|string|max:50',
             'pack' => 'nullable|string|max:100',
             'purchase_price' => 'required|numeric|min:0',
@@ -81,7 +137,14 @@ class ProductController extends Controller
             'status' => 'required|in:active,inactive',
         ]);
 
-        Product::create($request->all());
+        $data = $request->all();
+        
+        // Auto-generate SKU if not provided
+        if (empty($data['sku'])) {
+            $data['sku'] = $this->generateSKU($data['name'], $data['category_id']);
+        }
+
+        Product::create($data);
 
         return redirect()->route('products.index')
                          ->with('bg-color', 'success')

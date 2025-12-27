@@ -42,6 +42,7 @@
 
             <div class="col-md-6 form-group">
                 <label>Category <sup class="text-danger">*</sup></label>
+                <input class="form-control" type="hidden" readonly name="sku" id="sku_input" value="{{ old('sku', $product->sku) }}">
                 <select name="category_id" class="form-control" required>
                     <option value="">-- Select Category --</option>
                     @foreach($categories as $category)
@@ -51,11 +52,7 @@
                 @error('category_id') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
-            <div class="col-md-6 form-group">
-                <label>SKU / Product Code <sup class="text-danger">*</sup></label>
-                <input class="form-control" type="text" name="sku" value="{{ old('sku', $product->sku) }}" required placeholder="Enter SKU">
-                @error('sku') <small class="text-danger">{{ $message }}</small> @enderror
-            </div>
+           
 
             <div class="col-md-6 form-group">
                 <label>HSN Code</label>
@@ -63,49 +60,49 @@
                 @error('hsn') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
-            <div class="col-md-6 form-group">
+            <div class="col-md-3 form-group">
                 <label>PACK</label>
                 <input class="form-control" type="text" name="pack" value="{{ old('pack', $product->pack) }}" placeholder="e.g., 60 cap, 1 kg, etc.">
                 @error('pack') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
-            <div class="col-md-6 form-group">
+            <div class="col-md-3 form-group">
                 <label>Unit <sup class="text-danger">*</sup></label>
                 <input class="form-control" type="text" name="unit" value="{{ old('unit', $product->unit) }}" required placeholder="pcs, kg, box, etc.">
                 @error('unit') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
-            <div class="col-md-6 form-group">
+            <div class="col-md-2 form-group">
                 <label>Purchase Price <sup class="text-danger">*</sup></label>
                 <input class="form-control" type="number" step="0.01" name="purchase_price" value="{{ old('purchase_price', $product->purchase_price) }}" required placeholder="0.00" min="0">
                 @error('purchase_price') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
-            <div class="col-md-6 form-group">
+            <div class="col-md-2 form-group">
                 <label>Selling Price <sup class="text-danger">*</sup></label>
                 <input class="form-control" type="number" step="0.01" name="selling_price" value="{{ old('selling_price', $product->selling_price) }}" required placeholder="0.00" min="0">
                 @error('selling_price') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
-            <div class="col-md-6 form-group">
-                <label>MRP (Maximum Retail Price)</label>
+            <div class="col-md-2 form-group">
+                <label>MRP</label>
                 <input class="form-control" type="number" step="0.01" name="mrp" value="{{ old('mrp', $product->mrp) }}" placeholder="0.00" min="0">
                 @error('mrp') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
-            <div class="col-md-6 form-group">
+            <div class="col-md-2 form-group">
                 <label>GST Percentage (%)</label>
                 <input class="form-control" type="number" step="0.01" name="gst_percentage" value="{{ old('gst_percentage', $product->gst_percentage ?? 0) }}" placeholder="0.00" min="0" max="100">
                 @error('gst_percentage') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
-            <div class="col-md-6 form-group">
+            <div class="col-md-2 form-group">
                 <label>Quantity / Stock <sup class="text-danger">*</sup></label>
                 <input class="form-control" type="number" name="quantity" value="{{ old('quantity', $product->quantity) }}" required placeholder="0" min="0">
                 @error('quantity') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
-            <div class="col-md-6 form-group">
+            <div class="col-md-2 form-group">
                 <label>Status <sup class="text-danger">*</sup></label>
                 <select name="status" class="form-control" required>
                     <option value="active" {{ old('status', $product->status) == 'active' ? 'selected' : '' }}>Active</option>
@@ -122,4 +119,3 @@
     </form>
 </div>
 @endsection
-

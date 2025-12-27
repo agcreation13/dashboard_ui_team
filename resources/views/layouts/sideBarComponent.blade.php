@@ -34,7 +34,7 @@
                     $isMasterEntry = ['master-entry*'];
                     $isReportEntry = ['report*'];
                     $isWorkSheetAppEntry = ['worksheet*'];
-                    $isInventory = ['inventory*'];
+                    $isInventory = ['inventory*','dashboard*'];
                     $isStandaloneActive = collect($standaloneRoutes)->contains(fn($route) => Request::is($route));
                     $isOnlineSoftwareActive = collect($onlineSoftware)->contains(fn($route) => Request::is($route));
                     $isMasterEntry = collect($isMasterEntry)->contains(fn($route) => Request::is($route));
@@ -46,17 +46,17 @@
          
             
                 {{-- Dashboard --}}
-                <li>
-                    <a href="{{ url('/dashboard') }}" class="dropdown-toggle no-arrow">
-                        <span class="micon dw dw-house-1"></span>
-                        <span class="mtext">Dashboard</span>
-                    </a>
-                </li>
+                    <!-- <li>
+                        <a href="{{ url('/dashboard') }}" class="dropdown-toggle no-arrow">
+                            <span class="micon dw dw-house-1"></span>
+                            <span class="mtext">Dashboard</span>
+                        </a>
+                    </li> -->
 
                 {{-- Inventory Management --}}
                 <li class="dropdown {{ $isInventoryActive ? 'show' : '' }}">
                     <a href="javascript:;" class="dropdown-toggle">
-                        <span class="micon dw dw-box"></span>
+                        <span class="micon dw dw-house-1"></span>
                         <span class="mtext">Inventory</span>
                     </a>
                     <ul class="submenu {{ $isInventoryActive ? 'show' : '' }}"

@@ -30,7 +30,7 @@
         </div>
     @endif
 
-    <div id="site-grid"></div>
+    <div id="site-grid" class="table-responsive text-capitalize"></div>
 </div>
 
 @php

@@ -21,10 +21,10 @@
         margin: 0;
     }
     .card-body {
-        padding: 20px;
+        padding: 10px;
     }
     .form-group {
-        margin-bottom: 20px;
+        margin-bottom: 10px;
     }
     .form-group label {
         color: #2c3e50;
@@ -35,8 +35,9 @@
     .form-control {
         border: 1px solid #ddd;
         border-radius: 4px;
-        padding: 8px 12px;
+        padding: 2px 12px;
         font-size: 14px;
+        height: 30px;
     }
     .form-control:focus {
         border-color: #4a90e2;
@@ -124,7 +125,7 @@
                     <div class="col-md-6 form-group">
                         <label class="font-weight-bold">Customer <sup class="text-danger">*</sup></label>
                         <select name="customer_id" id="customer_id" class="form-control">
-                            <option value="">Select Customer</option>
+                            <option value="">Select Customer(IF NEW)</option>
                             @foreach($customers as $customer)
                                 <option value="{{ $customer->id }}" 
                                     data-name="{{ $customer->name }}" 
@@ -313,11 +314,17 @@ document.getElementById('customer_id').addEventListener('change', function() {
 // Add item
 document.getElementById('add-item').addEventListener('click', function() {
     const container = document.getElementById('items-container');
-    const newRow = container.firstElementChild.cloneNode(true);
+    const templateRow = container.firstElementChild;
+    const newRow = templateRow.cloneNode(true);
+    
+    // Update all input/select names with new index
     newRow.querySelectorAll('input, select').forEach(input => {
         if (input.name) {
-            input.name = input.name.replace('[0]', '[' + itemIndex + ']');
+            input.name = input.name.replace(/\[0\]/g, '[' + itemIndex + ']');
         }
+        // Remove data-listener attribute to allow re-attachment
+        input.removeAttribute('data-listener');
+        
         if(input.type === 'hidden') {
             // Clear hidden HSN field
             if(input.classList.contains('hsn-field')) {
@@ -333,9 +340,17 @@ document.getElementById('add-item').addEventListener('click', function() {
             }
         }
     });
-    newRow.querySelector('.sr-no').textContent = itemIndex + 1;
+    
+    // Update serial number
+    const srNoCell = newRow.querySelector('.sr-no');
+    if (srNoCell) {
+        srNoCell.textContent = itemIndex + 1;
+    }
+    
     container.appendChild(newRow);
     itemIndex++;
+    
+    // Re-attach event listeners for ALL rows (including new one)
     attachEventListeners();
     updateSrNos();
 });
@@ -360,6 +375,11 @@ function updateSrNos() {
 }
 
 function attachEventListeners() {
+    // Remove all existing listeners by removing data-listener attribute first
+    document.querySelectorAll('.product-select').forEach(select => {
+        select.removeAttribute('data-listener');
+    });
+    
     // Product select change
     document.querySelectorAll('.product-select').forEach(select => {
         if (!select.hasAttribute('data-listener')) {
@@ -367,48 +387,77 @@ function attachEventListeners() {
             select.addEventListener('change', function() {
                 const option = this.options[this.selectedIndex];
                 const row = this.closest('.item-row');
-                if (option.value) {
+                
+                if (option && option.value && option.value !== '') {
                     // Auto-fill HSN from product (hidden field)
                     const hsnInput = row.querySelector('.hsn-field');
-                    if (hsnInput && option.dataset.hsn) {
+                    if (hsnInput) {
                         hsnInput.value = option.dataset.hsn || '';
                     }
                     
                     // Auto-fill PACK from product
                     const packInput = row.querySelector('.pack');
-                    if (packInput && option.dataset.pack) {
+                    if (packInput) {
                         packInput.value = option.dataset.pack || '';
                     }
                     
                     // Auto-fill MRP from product
                     const mrpInput = row.querySelector('.mrp');
-                    if (mrpInput && option.dataset.mrp) {
-                        mrpInput.value = parseFloat(option.dataset.mrp) || 0;
+                    if (mrpInput) {
+                        const mrpValue = parseFloat(option.dataset.mrp) || 0;
+                        mrpInput.value = mrpValue > 0 ? mrpValue.toFixed(2) : '';
                     }
                     
                     // Auto-fill RATE from product (selling_price)
                     const rateInput = row.querySelector('.rate');
-                    if (rateInput && option.dataset.rate) {
-                        rateInput.value = parseFloat(option.dataset.rate) || 0;
+                    if (rateInput) {
+                        const rateValue = parseFloat(option.dataset.rate) || 0;
+                        rateInput.value = rateValue > 0 ? rateValue.toFixed(2) : '';
                     }
                     
                     // Auto-fill GST% from product
                     const gstInput = row.querySelector('.gst-pct');
-                    if (gstInput && option.dataset.gst) {
-                        gstInput.value = parseFloat(option.dataset.gst) || 0;
+                    if (gstInput) {
+                        const gstValue = parseFloat(option.dataset.gst) || 0;
+                        gstInput.value = gstValue > 0 ? gstValue.toFixed(2) : '0';
                     }
+                    
+                    // Set default quantity to 1 if empty
+                    const qtyInput = row.querySelector('.quantity');
+                    if (qtyInput && (!qtyInput.value || qtyInput.value === '0' || qtyInput.value === '')) {
+                        qtyInput.value = '1';
+                    }
+                    
+                    // Trigger input events to ensure calculations run
+                    if (qtyInput) qtyInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    if (rateInput) rateInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    if (gstInput) gstInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    
                 } else {
                     // Clear all fields when product is deselected
-                    row.querySelectorAll('input[type="text"], input[type="number"], input[type="hidden"]').forEach(inp => {
-                        if (!inp.readOnly && !inp.classList.contains('sr-no') && !inp.classList.contains('free-qty')) {
-                            if (inp.type === 'number') {
-                                inp.value = inp.classList.contains('free-qty') ? '0' : '';
-                            } else {
-                                inp.value = '';
-                            }
-                        }
-                    });
+                    const hsnInput = row.querySelector('.hsn-field');
+                    if (hsnInput) hsnInput.value = '';
+                    
+                    const packInput = row.querySelector('.pack');
+                    if (packInput) packInput.value = '';
+                    
+                    const mrpInput = row.querySelector('.mrp');
+                    if (mrpInput) mrpInput.value = '';
+                    
+                    const rateInput = row.querySelector('.rate');
+                    if (rateInput) rateInput.value = '';
+                    
+                    const gstInput = row.querySelector('.gst-pct');
+                    if (gstInput) gstInput.value = '0';
+                    
+                    const gstAmtField = row.querySelector('.gst-amt');
+                    if (gstAmtField) gstAmtField.value = '0.00';
+                    
+                    const netAmtField = row.querySelector('.net-amt');
+                    if (netAmtField) netAmtField.value = '0.00';
                 }
+                
+                // Calculate item total after auto-fill
                 calculateItemTotal(row);
             });
         }

@@ -89,8 +89,36 @@ class InvoiceController extends Controller
 
         DB::beginTransaction();
         try {
-            // Generate invoice number
-            $invoiceNumber = 'INV-' . date('Y') . '-' . str_pad(Invoice::count() + 1, 5, '0', STR_PAD_LEFT);
+            // Generate invoice number: INV-B{YY}{MM}{DD}-{random 2 digits}-{total_invoices + 1}
+            $year = date('y'); // 2 digit year (25 for 2025)
+            $month = date('m'); // 2 digit month (01-12)
+            $date = date('d'); // 2 digit date (01-31)
+            $datePart = $year . $month . $date; // e.g., 251228
+            
+            // Generate random 2 digits (00-99)
+            $randomPart = str_pad(rand(0, 99), 2, '0', STR_PAD_LEFT);
+            
+            // Use total invoices + 1 for sequential number
+            $totalInvoices = Invoice::count();
+            $sequentialPart = $totalInvoices + 1;
+            
+            // Generate invoice number: INV-B251228-02-1
+            $invoiceNumber = 'INV-B' . $datePart . '-' . $randomPart . '-' . $sequentialPart;
+            
+            // Ensure uniqueness - if duplicate exists, regenerate random part
+            $counter = 0;
+            while (Invoice::where('invoice_number', $invoiceNumber)->exists() && $counter < 100) {
+                $randomPart = str_pad(rand(0, 99), 2, '0', STR_PAD_LEFT);
+                $invoiceNumber = 'INV-B' . $datePart . '-' . $randomPart . '-' . $sequentialPart;
+                $counter++;
+            }
+            
+            // Final fallback if still duplicate - use timestamp
+            if (Invoice::where('invoice_number', $invoiceNumber)->exists()) {
+                $randomPart = str_pad(rand(0, 99), 2, '0', STR_PAD_LEFT);
+                $timestamp = time();
+                $invoiceNumber = 'INV-B' . $datePart . '-' . $randomPart . '-' . substr($timestamp, -3);
+            }
 
             // Get or create customer
             if ($request->customer_id) {

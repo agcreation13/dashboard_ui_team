@@ -1,5 +1,9 @@
 @extends('layouts.app')
-
+<style>
+    form.stock-update-form{
+        height: 30px;
+    }
+</style>
 @section('main_content')
 <div class="page-header">
     <div class="row pb-2">
@@ -78,7 +82,7 @@
         </div>
     </div>
 
-    <div id="site-grid"></div>
+    <div id="site-grid" class="table-responsive text-capitalize"></div>
 </div>
 
 @php
@@ -89,18 +93,21 @@
         $editUrl = route('products.edit', $product->id);
         $deleteUrl = route('products.destroy', $product->id);
         $updateStockUrl = route('products.updateStock', $product->id);
+        // Stock status color: Red (<=0), Yellow (>0 and <=10), Green (>10)
         $stockClass = $product->quantity <= 0 ? 'text-danger' : ($product->quantity <= 10 ? 'text-warning' : 'text-success');
-
-        $stockDisplay = '<span class="' . $stockClass . '"><strong>' . e($product->quantity) . ' ' . e($product->unit) . '</strong></span>';
+        $stockColor = $product->quantity <= 0 ? '#dc3545' : ($product->quantity <= 10 ? '#ffc107' : '#28a745');
+        
+        // Show just the count with color
+        $stockDisplay = '<span class="' . $stockClass . '" style="font-weight: bold; font-size: 14px;">' . e($product->quantity) . '</span>';
 
         $stockInput = <<<HTML
-            <form action="{$updateStockUrl}" method="POST" style="display: inline-block; margin: 0;" class="stock-update-form" data-product-name="{$product->name}">
+            <form action="{$updateStockUrl}" method="POST" style="display: inline-block; margin: 0;" class="stock-update-form" data-product-name="{$product->name}" data-original-quantity="{$product->quantity}">
                 <input type="hidden" name="_token" value="{$csrf}">
                 <input type="hidden" name="_method" value="PUT">
                 <div class="input-group input-group-sm" style="width: 140px;">
-                    <input type="number" name="quantity" class="form-control form-control-sm stock-quantity-input" value="{$product->quantity}" min="0" required style="font-weight: 500; text-align: center; border-radius: 4px 0 0 4px;">
+                    <input type="number" name="quantity" class="form-control form-control-sm stock-quantity-input" value="{$product->quantity}" min="0" required style="font-weight: 500; text-align: center; border-radius: 4px 0 0 4px;" data-original-value="{$product->quantity}">
                     <div class="input-group-append">
-                        <button type="submit" class="btn btn-sm btn-primary stock-update-btn" title="Update Stock" style="padding: 4px 10px; border-radius: 0 4px 4px 0;">
+                        <button type="submit" class="btn btn-sm btn-primary stock-update-btn" title="Update Stock" style="padding: 4px 10px; border-radius: 0 4px 4px 0;" disabled>
                             <i class="dw dw-check"></i>
                         </button>
                     </div>
@@ -123,7 +130,6 @@
             e($index + 1),
             e($product->name),
             e($product->category->name ?? 'N/A'),
-            e($product->sku),
             number_format($product->purchase_price, 2),
             number_format($product->selling_price, 2),
             $stockDisplay,
@@ -143,7 +149,6 @@
             { name: "ID", sort: false },
             { name: "Product Name", sort: true },
             { name: "Category", sort: true },
-            { name: "SKU", sort: true },
             { name: "Purchase Price", sort: true },
             { name: "Selling Price", sort: true },
             {
@@ -172,6 +177,24 @@
         },
         resizable: true
     }).render(document.getElementById("site-grid"));
+
+    // Enable/disable update button based on input changes
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('stock-quantity-input')) {
+            const input = e.target;
+            const form = input.closest('.stock-update-form');
+            const submitBtn = form.querySelector('.stock-update-btn');
+            const originalValue = parseFloat(input.getAttribute('data-original-value'));
+            const currentValue = parseFloat(input.value);
+            
+            // Enable button only if value has changed
+            if (currentValue !== originalValue && !isNaN(currentValue) && currentValue >= 0) {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
+            }
+        }
+    });
 
     // Handle stock update form submission with better UX
     document.addEventListener('submit', function(e) {
@@ -243,8 +266,13 @@
         transform: scale(1.05);
     }
     .stock-update-form .stock-update-btn:disabled {
-        opacity: 0.6;
+        opacity: 0.5;
         cursor: not-allowed;
+        background-color: #6c757d !important;
+    }
+    .stock-update-form .stock-update-btn:not(:disabled) {
+        opacity: 1;
+        cursor: pointer;
     }
     .stock-update-form .stock-quantity-input {
         border-right: none;
