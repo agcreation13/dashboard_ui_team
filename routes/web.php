@@ -10,6 +10,7 @@ use App\Http\Controllers\Inventory\CustomerController;
 use App\Http\Controllers\Inventory\InvoiceController;
 use App\Http\Controllers\Inventory\InventoryController;
 use App\Http\Controllers\Inventory\ReportController;
+use App\Http\Controllers\Inventory\InventoryDashboardController;
 
 
 Route::get('/', function () {
@@ -21,7 +22,7 @@ Route::get('/', function () {
         // if (in_array(Auth::user()->role, ['supervisor', 'supervisor'])) {
         //     return redirect()->route('leads-Dashboard');
         // }
-        return redirect()->route('dashboard');
+            return redirect()->route('inventory.dashboard');
     }
     return view('welcome');
 });
@@ -29,8 +30,8 @@ Route::get('/', function () {
 Route::middleware(['auth', 'check.permission'])->group(function () {
 
    // User-sheet 
-   Route::get('/dashboard', [UsersListController::class, 'index'])->name('dashboard');
-
+ 
+   Route::get('/dashboard', [InventoryDashboardController::class, 'index'])->name('dashboard');
    Route::get('/master-entry/user-list', [UsersListController::class, 'index'])->name('Uers.Index');
    Route::get('/master-entry/user-list/create', [UsersListController::class, 'create'])->name('Uers.Create');
    Route::post('/master-entry/user-list/store', [UsersListController::class, 'store'])->name('Uers.Store');
@@ -71,10 +72,10 @@ Route::middleware(['auth', 'check.permission'])->group(function () {
        'update' => 'products.update',
        'destroy' => 'products.destroy',
    ]);
-  Route::get('inventory/products/import', [ProductController::class, 'import'])->name('products.import');
-  Route::post('inventory/products/import', [ProductController::class, 'importStore'])->name('products.import.store');
-  Route::get('inventory/products/export', [ProductController::class, 'export'])->name('products.export');
-  Route::get('inventory/products/sample', [ProductController::class, 'downloadSample'])->name('products.sample');
+   Route::get('inventory/products/import', [ProductController::class, 'import'])->name('products.import');
+   Route::post('inventory/products/import', [ProductController::class, 'importStore'])->name('products.import.store');
+   Route::get('inventory/products/export', [ProductController::class, 'export'])->name('products.export');
+   Route::get('inventory/products/sample', [ProductController::class, 'downloadSample'])->name('products.sample');
   Route::put('inventory/products/{id}/stock', [ProductController::class, 'updateStock'])->name('products.updateStock');
 
    // Inventory - Customers
@@ -98,9 +99,12 @@ Route::middleware(['auth', 'check.permission'])->group(function () {
        'update' => 'invoices.update',
        'destroy' => 'invoices.destroy',
    ]);
-   Route::get('inventory/invoices/{id}/cancel', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
-   Route::get('inventory/invoices/{id}/pdf', [InvoiceController::class, 'downloadPDF'])->name('invoices.pdf');
-   Route::get('inventory/invoices/{id}/print', [InvoiceController::class, 'print'])->name('invoices.print');
+  Route::get('inventory/invoices/{id}/cancel', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
+  Route::get('inventory/invoices/{id}/pdf', [InvoiceController::class, 'downloadPDF'])->name('invoices.pdf');
+  Route::get('inventory/invoices/{id}/print', [InvoiceController::class, 'print'])->name('invoices.print');
+
+  // Inventory - Dashboard
+  Route::get('inventory/dashboard', [InventoryDashboardController::class, 'index'])->name('inventory.dashboard');
 
   // Inventory - Stock Management (Redirected to Products)
   Route::get('inventory/stock', function() {
