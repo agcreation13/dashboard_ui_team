@@ -37,9 +37,13 @@ class CustomerController extends Controller
             'address' => 'nullable|string',
             'gstin' => 'nullable|string|max:50',
             'state' => 'nullable|string|max:100',
+            'status' => 'nullable|in:active,close',
         ]);
 
-        Customer::create($request->all());
+        $data = $request->all();
+        $data['status'] = $data['status'] ?? 'active'; // Default to active if not provided
+
+        Customer::create($data);
 
         return redirect()->route('customers.index')
                          ->with('bg-color', 'success')
@@ -76,6 +80,7 @@ class CustomerController extends Controller
             'address' => 'nullable|string',
             'gstin' => 'nullable|string|max:50',
             'state' => 'nullable|string|max:100',
+            'status' => 'nullable|in:active,close',
         ]);
 
         $customer = Customer::findOrFail($id);
@@ -95,11 +100,16 @@ class CustomerController extends Controller
         
         // Check if customer has invoices
         if ($customer->invoices()->count() > 0) {
+            // Change status to 'close' instead of deleting
+            $customer->status = 'close';
+            $customer->save();
+
             return redirect()->route('customers.index')
-                             ->with('bg-color', 'danger')
-                             ->with('success', 'Cannot delete customer. They have associated invoices.');
+                             ->with('bg-color', 'warning')
+                             ->with('success', 'Customer status changed to "close" because they have associated invoices.');
         }
 
+        // If no invoices, allow deletion
         $customer->delete();
 
         return redirect()->route('customers.index')
