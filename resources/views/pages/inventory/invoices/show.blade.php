@@ -36,11 +36,11 @@
             <!-- Header Section -->
             <div class="row mb-4" style="border: 1px solid #ddd; padding: 15px;">
                 <div class="col-md-4">
-                    <h5><strong>{{ $invoice->seller_name ?? 'SIDDHI AYURVEDIC' }}</strong></h5>
-                    <p>{{ $invoice->seller_address ?? 'MIDAS HEIGHTS, SECTOR-7, HDIL LAYOUT, VIRAR(W), PALGHAR-401303' }}</p>
-                    <p>EMAIL:- {{ $invoice->seller_email ?? 'siddhiayurvedic009@gmail.com' }}</p>
-                    <p>Phone no. :-{{ $invoice->seller_phone ?? '9021350010' }}</p>
-                    <p><strong>GSTIN:</strong> {{ $invoice->seller_gstin ?? '27BXFPP6045K1Z1' }}</p>
+                    <h5><strong>{{ config('seller.name') }}</strong></h5>
+                    <p>{{ config('seller.address') }}</p>
+                    <p>EMAIL:- {{ config('seller.email') }}</p>
+                    <p>Phone no. :-{{ config('seller.phone') }}</p>
+                    <p><strong>GSTIN:</strong> {{ config('seller.gstin') }}</p>
                 </div>
                 <div class="col-md-4 text-left">
                     <h4><strong>GST INVOICE</strong></h4>
@@ -52,11 +52,11 @@
                 </div>
                 <div class="col-md-4 text-right">
                     <h4>Buyer</h4>
-                    <h5>Name: <strong>{{ $invoice->customer_name }}</strong></h5>
-                    <p>Address: {{ $invoice->customer_address ?? '' }}</p>
-                    <p>Phone No.: {{ $invoice->customer_mobile ?? '' }}</p>
-                    <p>Email: {{ $invoice->customer_email ?? '' }}</p>
-                    <p>GST NO.: {{ $invoice->customer_gstin ?? '' }}</p>
+                    <h5>Name: <strong>{{ $invoice->customer->name ?? 'N/A' }}</strong></h5>
+                    <p>Address: {{ $invoice->customer->address ?? '' }}</p>
+                    <p>Phone No.: {{ $invoice->customer->phone ?? '' }}</p>
+                    <p>Email: {{ $invoice->customer->email ?? '' }}</p>
+                    <p>GST NO.: {{ $invoice->customer->gstin ?? '' }}</p>
                 </div>
             </div>
 
@@ -83,17 +83,17 @@
                         @foreach($invoice->items as $index => $item)
                     <tr>
                             <td class="text-center">{{ $index + 1 }}</td>
-                            <td class="text-center">{{ $item->hsn ?? ($item->product->hsn ?? '') }}</td>
-                        <td>{{ $item->product_name }}</td>
-                            <td class="text-center">{{ $item->pack ?? '' }}</td>
+                            <td class="text-center">{{ $item->product->hsn ?? '' }}</td>
+                        <td>{{ $item->product->name ?? 'N/A' }}</td>
+                            <td class="text-center">{{ $item->product->pack ?? '' }}</td>
                             <td class="text-center">{{ $item->quantity }}</td>
                             <td class="text-center">{{ $item->free_quantity ?? 0 }}</td>
-                            <td class="text-right">{{ $item->mrp ? number_format($item->mrp, 2) : '' }}</td>
+                            <td class="text-right">{{ $item->product->mrp ? number_format($item->product->mrp, 2) : '' }}</td>
                             <td class="text-right">{{ number_format($item->rate, 2) }}</td>
                             <td class="text-right">{{ number_format($item->discount_percentage ?? 0, 2) }}%</td>
-                            <td class="text-right">{{ number_format($item->gst_percentage ?? 0, 2) }}%</td>
-                            <td class="text-right">{{ number_format($item->gst_amount ?? 0, 2) }}</td>
-                            <td class="text-right">{{ number_format($item->net_amount ?? $item->line_total, 2) }}</td>
+                            <td class="text-right">{{ number_format($item->product->gst_percentage ?? 0, 2) }}%</td>
+                            <td class="text-right">{{ number_format((($item->rate * $item->quantity) * ($item->product->gst_percentage ?? 0) / 100), 2) }}</td>
+                            <td class="text-right">{{ number_format($item->net_amount, 2) }}</td>
                     </tr>
                     @endforeach
                 </tbody>

@@ -123,9 +123,9 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6 form-group">
-                        <label class="font-weight-bold">Customer <sup class="text-danger">*</sup></label>
+                        <label class="font-weight-bold">Customer</label>
                         <select name="customer_id" id="customer_id" class="form-control">
-                            <option value="">Select Customer(IF NEW)</option>
+                            <option value="">Select Customer (IF NEW - Leave Empty)</option>
                             @foreach($customers as $customer)
                                 <option value="{{ $customer->id }}" 
                                     data-name="{{ $customer->name }}" 
@@ -136,7 +136,7 @@
                                     data-state="{{ $customer->state ?? '' }}">{{ $customer->name }}</option>
                             @endforeach
                         </select>
-                        <!-- <small class="text-muted">Select existing customer or enter new customer details below</small> -->
+                        <small class="text-muted">Select existing customer OR leave empty to create new customer below</small>
                         @error('customer_id') <small class="text-danger">{{ $message }}</small> @enderror
                     </div>
                     <div class="col-md-6 form-group">

@@ -14,6 +14,7 @@ class Customer extends Model
         'address',
         'gstin',
         'state',
+        'status',
     ];
 
     /**

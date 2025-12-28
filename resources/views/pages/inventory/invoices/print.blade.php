@@ -155,11 +155,11 @@
         <!-- Header Section -->
         <div class="header-section">
             <div class="seller-section">
-                <div class="section-title">{{ $invoice->seller_name ?? 'SIDDHI AYURVEDIC' }}</div>
-                <div>{{ $invoice->seller_address ?? 'MIDAS HEIGHTS, SECTOR-7, HDIL LAYOUT, VIRAR(W), PALGHAR-401303' }}</div>
-                <div>EMAIL:- {{ $invoice->seller_email ?? 'siddhiayurvedic009@gmail.com' }}</div>
-                <div>Phone no. :-{{ $invoice->seller_phone ?? '9021350010' }}</div>
-                <div>GSTIN: {{ $invoice->seller_gstin ?? '27BXFPP6045K1Z1' }}</div>
+                <div class="section-title">{{ config('seller.name') }}</div>
+                <div>{{ config('seller.address') }}</div>
+                <div><b>EMAIL:-</b> {{ config('seller.email') }}</div>
+                <div><b>Phone no. :-</b>{{ config('seller.phone') }}</div>
+                <div><b>GSTIN:</b> {{ config('seller.gstin') }}</div>
             </div>
             
             <div class="invoice-details-section" style="text-align: left;">
@@ -172,11 +172,11 @@
             
             <div class="buyer-section">
                 <div class="section-title">Buyer</div>
-                <div>Name: <strong>{{ $invoice->customer_name }}</strong></div>
-                <div>Address: {{ $invoice->customer_address ?? '' }}</div>
-                <div>Phone No.: {{ $invoice->customer_mobile ?? '' }}</div>
-                <div>Email: {{ $invoice->customer_email ?? '' }}</div>
-                <div>GST NO.: {{ $invoice->customer_gstin ?? '' }}</div>
+                <div><b>Name:</b> <strong>{{ $invoice->customer->name ?? 'N/A' }}</strong></div>
+                <div><b>Address:</b> {{ $invoice->customer->address ?? '' }}</div>
+                <div><b>Phone No.:</b> {{ $invoice->customer->phone ?? '' }}</div>
+                <div><b>Email:</b> {{ $invoice->customer->email ?? '' }}</div>
+                <div><b>GST NO.:</b> {{ $invoice->customer->gstin ?? '' }}</div>
             </div>
         </div>
 
@@ -202,17 +202,17 @@
                 @foreach($invoice->items as $index => $item)
                 <tr class="text-center">
                     <td class="text-center">{{ $index + 1 }}</td>
-                    <td class="text-center">{{ $item->hsn ?? ($item->product->hsn ?? '') }}</td>
-                    <td class="text-left">{{ $item->product_name }}</td>
-                    <td class="text-center">{{ $item->pack ?? '' }}</td>
+                    <td class="text-center">{{ $item->product->hsn ?? '' }}</td>
+                    <td class="text-left">{{ $item->product->name ?? 'N/A' }}</td>
+                    <td class="text-center">{{ $item->product->pack ?? '' }}</td>
                     <td class="text-center">{{ $item->quantity }}</td>
                     <td class="text-center">{{ $item->free_quantity ?? 0 }}</td>
-                    <td class="text-center">{{ $item->mrp ? number_format($item->mrp, 2) : '' }}</td>
+                    <td class="text-center">{{ $item->product->mrp ? number_format($item->product->mrp, 2) : '' }}</td>
                     <td class="text-center">{{ number_format($item->rate, 2) }}</td>
                     <td class="text-center">{{ number_format($item->discount_percentage ?? 0, 2) }}%</td>
-                    <td class="text-center">{{ number_format($item->gst_percentage ?? 0, 2) }}%</td>
-                    <td class="text-center">{{ number_format($item->gst_amount ?? 0, 2) }}</td>
-                    <td class="text-center">{{ number_format($item->net_amount ?? $item->line_total, 2) }}</td>
+                    <td class="text-center">{{ number_format($item->product->gst_percentage ?? 0, 2) }}%</td>
+                    <td class="text-center">{{ number_format((($item->rate * $item->quantity) * ($item->product->gst_percentage ?? 0) / 100), 2) }}</td>
+                    <td class="text-center">{{ number_format($item->net_amount, 2) }}</td>
                 </tr>
                 @endforeach
                 @for($i = count($invoice->items); $i < 10; $i++)
@@ -271,11 +271,11 @@
         <!-- Header Section -->
         <div class="header-section">
             <div class="seller-section">
-                <div class="section-title">{{ $invoice->seller_name ?? 'SIDDHI AYURVEDIC' }}</div>
-                <div>{{ $invoice->seller_address ?? 'MIDAS HEIGHTS, SECTOR-7, HDIL LAYOUT, VIRAR(W), PALGHAR-401303' }}</div>
-                <div>EMAIL:- {{ $invoice->seller_email ?? 'siddhiayurvedic009@gmail.com' }}</div>
-                <div>Phone no. :-{{ $invoice->seller_phone ?? '9021350010' }}</div>
-                <div>GSTIN: {{ $invoice->seller_gstin ?? '27BXFPP6045K1Z1' }}</div>
+                <div class="section-title">{{ config('seller.name') }}</div>
+                <div>{{ config('seller.address') }}</div>
+                <div><b>EMAIL:-</b> {{ config('seller.email') }}</div>
+                <div><b>Phone no. :-</b>{{ config('seller.phone') }}</div>
+                <div><b>GSTIN:</b> {{ config('seller.gstin') }}</div>
             </div>
             
             <div class="invoice-details-section" style="text-align: left;">
@@ -288,11 +288,11 @@
             
             <div class="buyer-section">
                 <div class="section-title">Buyer</div>
-                <div>Name: <strong>{{ $invoice->customer_name }}</strong></div>
-                <div>Address: {{ $invoice->customer_address ?? '' }}</div>
-                <div>Phone No.: {{ $invoice->customer_mobile ?? '' }}</div>
-                <div>Email: {{ $invoice->customer_email ?? '' }}</div>
-                <div>GST NO.: {{ $invoice->customer_gstin ?? '' }}</div>
+                <div><b>Name:</b> <strong>{{ $invoice->customer->name ?? 'N/A' }}</strong></div>
+                <div><b>Address:</b> {{ $invoice->customer->address ?? '' }}</div>
+                <div><b>Phone No.:</b> {{ $invoice->customer->phone ?? '' }}</div>
+                <div><b>Email:</b> {{ $invoice->customer->email ?? '' }}</div>
+                <div><b>GST NO.:</b> {{ $invoice->customer->gstin ?? '' }}</div>
             </div>
         </div>
 
@@ -318,17 +318,17 @@
                 @foreach($invoice->items as $index => $item)
                 <tr class="text-center">
                     <td class="text-center">{{ $index + 1 }}</td>
-                    <td class="text-center">{{ $item->hsn ?? ($item->product->hsn ?? '') }}</td>
-                    <td class="text-left">{{ $item->product_name }}</td>
-                    <td class="text-center">{{ $item->pack ?? '' }}</td>
+                    <td class="text-center">{{ $item->product->hsn ?? '' }}</td>
+                    <td class="text-left">{{ $item->product->name ?? 'N/A' }}</td>
+                    <td class="text-center">{{ $item->product->pack ?? '' }}</td>
                     <td class="text-center">{{ $item->quantity }}</td>
                     <td class="text-center">{{ $item->free_quantity ?? 0 }}</td>
-                    <td class="text-center">{{ $item->mrp ? number_format($item->mrp, 2) : '' }}</td>
+                    <td class="text-center">{{ $item->product->mrp ? number_format($item->product->mrp, 2) : '' }}</td>
                     <td class="text-center">{{ number_format($item->rate, 2) }}</td>
                     <td class="text-center">{{ number_format($item->discount_percentage ?? 0, 2) }}%</td>
-                    <td class="text-center">{{ number_format($item->gst_percentage ?? 0, 2) }}%</td>
-                    <td class="text-center">{{ number_format($item->gst_amount ?? 0, 2) }}</td>
-                    <td class="text-center">{{ number_format($item->net_amount ?? $item->line_total, 2) }}</td>
+                    <td class="text-center">{{ number_format($item->product->gst_percentage ?? 0, 2) }}%</td>
+                    <td class="text-center">{{ number_format((($item->rate * $item->quantity) * ($item->product->gst_percentage ?? 0) / 100), 2) }}</td>
+                    <td class="text-center">{{ number_format($item->net_amount, 2) }}</td>
                 </tr>
                 @endforeach
                 @for($i = count($invoice->items); $i < 10; $i++)

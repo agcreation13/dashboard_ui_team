@@ -23,6 +23,13 @@
     </div>
     <hr class="pb-2">
 
+    @if($customer->invoices()->count() > 0)
+    <div class="alert alert-info mb-3">
+        <i class="dw dw-information"></i> <strong>Note:</strong> This customer has {{ $customer->invoices()->count() }} invoice(s). 
+        Any changes made here will automatically reflect in all invoice displays (PDF/Print) since invoices now reference customer data via relationship.
+    </div>
+    @endif
+
     <form action="{{ route('customers.update', $customer->id) }}" method="POST">
         @csrf
         @method('PUT')
@@ -61,6 +68,15 @@
                 <label>State</label>
                 <input class="form-control" type="text" name="state" value="{{ old('state', $customer->state) }}" placeholder="Enter state">
                 @error('state') <small class="text-danger">{{ $message }}</small> @enderror
+            </div>
+
+            <div class="col-md-6 form-group">
+                <label>Status <sup class="text-danger">*</sup></label>
+                <select class="form-control" name="status" required>
+                    <option value="active" {{ old('status', $customer->status ?? 'active') === 'active' ? 'selected' : '' }}>Active</option>
+                    <option value="close" {{ old('status', $customer->status ?? 'active') === 'close' ? 'selected' : '' }}>Close</option>
+                </select>
+                @error('status') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
             <div class="col-md-12 text-right">

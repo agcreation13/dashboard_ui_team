@@ -54,12 +54,17 @@
             </div>
         HTML;
 
+        $statusBadge = $customer->status === 'close' 
+            ? '<span class="badge badge-danger">Close</span>' 
+            : '<span class="badge badge-success">Active</span>';
+
         return [
             e($index + 1),
             e($customer->name),
             e($customer->phone ?? 'N/A'),
             e($customer->address ?? 'N/A'),
             e($customer->invoices_count ?? 0),
+            $statusBadge,
             e($customer->created_at->format('Y-m-d')),
             $actions,
         ];
@@ -77,6 +82,7 @@
             { name: "Phone", sort: true },
             { name: "Address", sort: true },
             { name: "Invoices", sort: true },
+            { name: "Status", sort: true, formatter: cell => gridjs.html(cell) },
             { name: "Created Date", sort: true },
             {
                 name: "Actions",
