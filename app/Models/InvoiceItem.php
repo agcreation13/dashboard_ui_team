@@ -9,35 +9,20 @@ class InvoiceItem extends Model
 {
     protected $fillable = [
         'invoice_id',
-        'product_id',
-        'product_name',
-        'hsn',
-        'pack',
+        'product_id', // Only store product_id, get product data via relationship
         'quantity',
-        'free_quantity',
-        'mrp',
+        'free_quantity', // Invoice-specific, keep this
         'rate',
-        'discount',
         'discount_percentage',
-        'tax',
-        'gst_percentage',
-        'gst_amount',
         'net_amount',
-        'line_total',
     ];
 
     protected $casts = [
         'quantity' => 'integer',
         'free_quantity' => 'integer',
-        'mrp' => 'decimal:2',
         'rate' => 'decimal:2',
-        'discount' => 'decimal:2',
         'discount_percentage' => 'decimal:2',
-        'tax' => 'decimal:2',
-        'gst_percentage' => 'decimal:2',
-        'gst_amount' => 'decimal:2',
         'net_amount' => 'decimal:2',
-        'line_total' => 'decimal:2',
     ];
 
     /**
