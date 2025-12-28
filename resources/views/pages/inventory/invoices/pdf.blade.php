@@ -25,22 +25,24 @@
         }
         .seller-section {
             display: table-cell;
-            width: 40%;
+            width: 30%;
             vertical-align: top;
             padding-right: 10px;
         }
         .invoice-details-section {
             display: table-cell;
-            width: 30%;
+            width: 40%;
             vertical-align: top;
             text-align: left;
             padding: 0 10px;
+            border-left: 1px solid #000;
+            border-right: 1px solid #000;
         }
         .buyer-section {
             display: table-cell;
             width: 30%;
             vertical-align: top;
-            text-align: right;
+            text-transform: capitalize;
             padding-left: 10px;
         }
         .section-title {
@@ -75,35 +77,47 @@
         .text-center {
             text-align: center;
         }
+        .text-left {
+            text-align: left;
+        }
         .summary-section {
             float: right;
-            width: 300px;
+            width: 100%;
             margin-top: 10px;
         }
-        .summary-row {
-            display: table;
+        .summary-table {
             width: 100%;
-            margin-bottom: 3px;
+            border-collapse: collapse;
         }
-        .summary-label {
-            display: table-cell;
-            width: 60%;
-            padding-right: 10px;
+        .summary-table th, .summary-table td {
+            border: 1px solid #000;
+            padding: 5px;
+            text-align: center;
+            font-size: 10px;
         }
-        .summary-value {
-            display: table-cell;
-            width: 40%;
+        .summary-table th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+        .summary-table .text-right {
             text-align: right;
+        }
+        .summary-table .text-left {
+            text-align: left;
         }
         .total-row {
             font-weight: bold;
-            border-top: 2px solid #000;
-            padding-top: 5px;
+        }
+        .total-row-left {
+            text-align: right !important;
+            padding-right: 10px;
         }
     </style>
 </head>
 <body>
     <div class="invoice-container">
+        <div class="gst-invoice-title text-center">{{ $invoice->status === 'cancelled' ? 'CANCELLED INVOICE' : 'INVOICE' }}</div>
+              
         <!-- Header Section -->
         <div class="header-section">
             <div class="seller-section">
@@ -115,7 +129,6 @@
             </div>
             
             <div class="invoice-details-section" style="text-align: left;">
-                <div class="gst-invoice-title">{{ $invoice->status === 'cancelled' ? 'CANCELLED INVOICE' : 'INVOICE' }}</div>
                 <div><strong>Invoice No.:</strong> {{ $invoice->invoice_number }}</div>
                 <div><strong>Date:</strong> {{ $invoice->invoice_date->format('d/m/Y') }}</div>
                 <div><strong>E-way Bill:</strong> {{ $invoice->eway_bill ?? '' }}</div>
@@ -123,7 +136,7 @@
                 <div><strong>S. MAN:</strong> {{ $invoice->s_man ?? '' }}</div>
             </div>
             
-            <div class="buyer-section" style="text-align: right;">
+            <div class="buyer-section">
                 <div class="section-title">Buyer</div>
                 <div>Name: <strong>{{ $invoice->customer_name }}</strong></div>
                 <div>Address: {{ $invoice->customer_address ?? '' }}</div>
@@ -139,7 +152,7 @@
                 <tr>
                     <th>Sr No.</th>
                     <th>HSN</th>
-                    <th>Product Name</th>
+                    <th class="text-left" style="text-align: left;">Product Name</th>
                     <th>PACK</th>
                     <th>QTY</th>
                     <th>FREE</th>
@@ -153,19 +166,19 @@
             </thead>
             <tbody>
                 @foreach($invoice->items as $index => $item)
-                <tr>
+                <tr class="text-center">
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td class="text-center">{{ $item->hsn ?? ($item->product->hsn ?? '') }}</td>
-                    <td>{{ $item->product_name }}</td>
-                    <td>{{ $item->pack ?? '' }}</td>
+                    <td class="text-left">{{ $item->product_name }}</td>
+                    <td class="text-center">{{ $item->pack ?? '' }}</td>
                     <td class="text-center">{{ $item->quantity }}</td>
                     <td class="text-center">{{ $item->free_quantity ?? 0 }}</td>
-                    <td class="text-right">{{ $item->mrp ? number_format($item->mrp, 2) : '' }}</td>
-                    <td class="text-right">{{ number_format($item->rate, 2) }}</td>
-                    <td class="text-right">{{ number_format($item->discount_percentage ?? 0, 2) }}%</td>
-                    <td class="text-right">{{ number_format($item->gst_percentage ?? 0, 2) }}%</td>
-                    <td class="text-right">{{ number_format($item->gst_amount ?? 0, 2) }}</td>
-                    <td class="text-right">{{ number_format($item->net_amount ?? $item->line_total, 2) }}</td>
+                    <td class="text-center">{{ $item->mrp ? number_format($item->mrp, 2) : '' }}</td>
+                    <td class="text-center">{{ number_format($item->rate, 2) }}</td>
+                    <td class="text-center">{{ number_format($item->discount_percentage ?? 0, 2) }}%</td>
+                    <td class="text-center">{{ number_format($item->gst_percentage ?? 0, 2) }}%</td>
+                    <td class="text-center">{{ number_format($item->gst_amount ?? 0, 2) }}</td>
+                    <td class="text-center">{{ number_format($item->net_amount ?? $item->line_total, 2) }}</td>
                 </tr>
                 @endforeach
                 @for($i = count($invoice->items); $i < 10; $i++)
@@ -185,47 +198,35 @@
                 </tr>
                 @endfor
             </tbody>
-        </table>
-
-        <!-- Summary Section -->
-        <div class="summary-section">
-            <div class="summary-row">
-                <div class="summary-label">CGST:</div>
-                <div class="summary-value">{{ number_format($invoice->cgst_percentage ?? 0, 2) }}%</div>
-            </div>
-            <div class="summary-row">
-                <div class="summary-label">CGST AMT:</div>
-                <div class="summary-value">{{ number_format($invoice->cgst_amount ?? 0, 2) }}</div>
-            </div>
-            <div class="summary-row">
-                <div class="summary-label">SGST:</div>
-                <div class="summary-value">{{ number_format($invoice->sgst_percentage ?? 0, 2) }}%</div>
-            </div>
-            <div class="summary-row">
-                <div class="summary-label">SGST AMT:</div>
-                <div class="summary-value">{{ number_format($invoice->sgst_amount ?? 0, 2) }}</div>
-            </div>
-            <div class="summary-row">
-                <div class="summary-label">TOTALAM:</div>
-                <div class="summary-value">{{ number_format($invoice->subtotal, 2) }}</div>
-            </div>
-            <div class="summary-row">
-                <div class="summary-label">TOTAL AMT:</div>
-                <div class="summary-value">{{ number_format($invoice->subtotal, 2) }}</div>
-            </div>
-            <div class="summary-row">
-                <div class="summary-label">AD/LS AMT:</div>
-                <div class="summary-value">{{ number_format($invoice->additional_amount ?? 0, 2) }}</div>
-            </div>
-            <div class="summary-row total-row">
-                <div class="summary-label">ROUND OFF:</div>
-                <div class="summary-value">{{ number_format($invoice->round_off ?? 0, 2) }}</div>
-            </div>
-            <div class="summary-row total-row">
-                <div class="summary-label">GRAND TOTAL:</div>
-                <div class="summary-value">{{ number_format($invoice->grand_total, 2) }}</div>
-            </div>
-        </div>
+ 
+                <tr>
+                    <th colspan="5" rowspan="4"></th>
+                    <th>CGST</th>
+                    <th>CGST AMT</th>
+                    <th>SGST</th>
+                    <th>SGST AMT</th>
+                    <th>TOTALAM</th>
+                    <th>TOTAL AMT</th>
+                    <th>AD/LS AMT</th>
+                </tr>
+                <tr class="text-center">
+                    <td class="text-center">{{ number_format($invoice->cgst_percentage ?? 0, 2) }}%</td>
+                    <td class="text-center">{{ number_format($invoice->cgst_amount ?? 0, 2) }}</td>
+                    <td class="text-center">{{ number_format($invoice->sgst_percentage ?? 0, 2) }}%</td>
+                    <td class="text-center">{{ number_format($invoice->sgst_amount ?? 0, 2) }}</td>
+                    <td class="text-center">{{ number_format($invoice->subtotal, 2) }}</td>
+                    <td class="text-center">{{ number_format($invoice->subtotal, 2) }}</td>
+                    <td class="text-center">{{ number_format($invoice->additional_amount ?? 0, 2) }}</td>
+                </tr>
+                <tr class="total-row">
+                    <td colspan="6" class="total-row-left"><strong>ROUND OFF:</strong></td>
+                    <td class="text-center"><strong>{{ number_format($invoice->round_off ?? 0, 2) }}</strong></td>
+                </tr>
+                <tr class="total-row">
+                    <td colspan="6" class="total-row-left"><strong>GRAND TOTAL:</strong></td>
+                    <td class="text-center"><strong>{{ number_format($invoice->grand_total, 2) }}</strong></td>
+                </tr>
+            </table>
     </div>
 </body>
 </html>
