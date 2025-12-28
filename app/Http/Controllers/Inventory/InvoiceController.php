@@ -55,30 +55,32 @@ class InvoiceController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        // Validate customer_id or customer details for new customer
+        $customerValidation = [];
+        if ($request->filled('customer_id')) {
+            $customerValidation['customer_id'] = 'required|exists:customers,id';
+        } else {
+            // If customer_id is empty, validate customer details for new customer
+            $customerValidation['customer_name'] = 'required|string|max:255';
+            $customerValidation['customer_mobile'] = 'nullable|string|max:20';
+            $customerValidation['customer_email'] = 'nullable|email|max:255';
+            $customerValidation['customer_address'] = 'nullable|string';
+            $customerValidation['customer_gstin'] = 'nullable|string|max:50';
+            $customerValidation['customer_state'] = 'nullable|string|max:100';
+        }
+
+        $request->validate(array_merge([
             'invoice_date' => 'required|date',
             'eway_bill' => 'nullable|string|max:100',
             'mr_no' => 'nullable|string|max:100',
             's_man' => 'nullable|string|max:100',
-            'customer_id' => 'nullable|exists:customers,id',
-            'customer_name' => 'required|string|max:255',
-            'customer_mobile' => 'nullable|string|max:20',
-            'customer_email' => 'nullable|email|max:255',
-            'customer_address' => 'nullable|string',
-            'customer_gstin' => 'nullable|string|max:50',
-            'customer_state' => 'nullable|string|max:100',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.hsn' => 'nullable|string|max:50',
-            'items.*.pack' => 'nullable|string|max:100',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.free_quantity' => 'nullable|integer|min:0',
-            'items.*.mrp' => 'nullable|numeric|min:0',
             'items.*.rate' => 'required|numeric|min:0',
             'items.*.discount_percentage' => 'nullable|numeric|min:0|max:100',
-            'items.*.gst_percentage' => 'nullable|numeric|min:0|max:100',
-            'items.*.gst_amount' => 'nullable|numeric|min:0',
-            'items.*.net_amount' => 'nullable|numeric|min:0',
+            'items.*.net_amount' => 'required|numeric|min:0',
             'subtotal' => 'required|numeric|min:0',
             'cgst_percentage' => 'nullable|numeric|min:0|max:100',
             'cgst_amount' => 'nullable|numeric|min:0',
@@ -87,7 +89,7 @@ class InvoiceController extends Controller
             'additional_amount' => 'nullable|numeric',
             'round_off' => 'nullable|numeric',
             'grand_total' => 'required|numeric|min:0',
-        ]);
+        ], $customerValidation));
 
         DB::beginTransaction();
         try {
@@ -123,19 +125,11 @@ class InvoiceController extends Controller
             }
 
             // Get or create customer
-            if ($request->customer_id) {
-            $customer = Customer::findOrFail($request->customer_id);
-                // Update customer with new information if provided
-                $customer->update([
-                    'name' => $request->customer_name,
-                    'phone' => $request->customer_mobile,
-                    'email' => $request->customer_email,
-                    'address' => $request->customer_address,
-                    'gstin' => $request->customer_gstin,
-                    'state' => $request->customer_state,
-                ]);
+            if ($request->filled('customer_id')) {
+                // Use existing customer
+                $customer = Customer::findOrFail($request->customer_id);
             } else {
-                // Create new customer
+                // Create new customer from form data
                 $customer = Customer::create([
                     'name' => $request->customer_name,
                     'phone' => $request->customer_mobile,
@@ -143,34 +137,21 @@ class InvoiceController extends Controller
                     'address' => $request->customer_address,
                     'gstin' => $request->customer_gstin,
                     'state' => $request->customer_state,
+                    'status' => 'active',
                 ]);
             }
-
-            // Get default seller details (can be moved to config or settings table)
-            $sellerDetails = $this->getDefaultSellerDetails();
 
             // Calculate total tax (CGST + SGST)
             $totalTax = ($request->cgst_amount ?? 0) + ($request->sgst_amount ?? 0);
 
-            // Create invoice
+            // Create invoice - seller details come from config, not stored in DB
             $invoice = Invoice::create([
                 'invoice_number' => $invoiceNumber,
                 'invoice_date' => $request->invoice_date,
-                'seller_name' => $sellerDetails['name'],
-                'seller_address' => $sellerDetails['address'],
-                'seller_email' => $sellerDetails['email'],
-                'seller_phone' => $sellerDetails['phone'],
-                'seller_gstin' => $sellerDetails['gstin'],
                 'eway_bill' => $request->eway_bill,
                 'mr_no' => $request->mr_no,
                 's_man' => $request->s_man,
-                'customer_id' => $customer->id,
-                'customer_name' => $request->customer_name,
-                'customer_mobile' => $request->customer_mobile,
-                'customer_email' => $request->customer_email,
-                'customer_address' => $request->customer_address,
-                'customer_gstin' => $request->customer_gstin,
-                'customer_state' => $request->customer_state,
+                'customer_id' => $customer->id, // Only store customer_id
                 'subtotal' => $request->subtotal,
                 'discount' => 0, // Not used in GST format
                 'tax' => $totalTax,
@@ -200,24 +181,15 @@ class InvoiceController extends Controller
                 // Calculate line total (net amount)
                 $lineTotal = $item['net_amount'] ?? 0;
 
-                // Create invoice item
+                // Create invoice item - only store essential fields, get product data via relationship
                 InvoiceItem::create([
                     'invoice_id' => $invoice->id,
-                    'product_id' => $item['product_id'],
-                    'product_name' => $product->name,
-                    'hsn' => $item['hsn'] ?? $product->hsn,
-                    'pack' => $item['pack'] ?? $product->pack,
+                    'product_id' => $item['product_id'], // Only store product_id
                     'quantity' => $item['quantity'],
                     'free_quantity' => $item['free_quantity'] ?? 0,
-                    'mrp' => $item['mrp'] ?? $product->mrp,
                     'rate' => $item['rate'],
-                    'discount' => 0, // Not used, using discount_percentage
                     'discount_percentage' => $item['discount_percentage'] ?? 0,
-                    'tax' => $item['gst_amount'] ?? 0,
-                    'gst_percentage' => $item['gst_percentage'] ?? $product->gst_percentage ?? 0,
-                    'gst_amount' => $item['gst_amount'] ?? 0,
                     'net_amount' => $item['net_amount'] ?? 0,
-                    'line_total' => $lineTotal,
                 ]);
 
                 // Update product stock
@@ -295,25 +267,14 @@ class InvoiceController extends Controller
             'eway_bill' => 'nullable|string|max:100',
             'mr_no' => 'nullable|string|max:100',
             's_man' => 'nullable|string|max:100',
-            'customer_id' => 'nullable|exists:customers,id',
-            'customer_name' => 'required|string|max:255',
-            'customer_mobile' => 'nullable|string|max:20',
-            'customer_email' => 'nullable|email|max:255',
-            'customer_address' => 'nullable|string',
-            'customer_gstin' => 'nullable|string|max:50',
-            'customer_state' => 'nullable|string|max:100',
+            'customer_id' => 'required|exists:customers,id', // Now required
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.hsn' => 'nullable|string|max:50',
-            'items.*.pack' => 'nullable|string|max:100',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.free_quantity' => 'nullable|integer|min:0',
-            'items.*.mrp' => 'nullable|numeric|min:0',
             'items.*.rate' => 'required|numeric|min:0',
             'items.*.discount_percentage' => 'nullable|numeric|min:0|max:100',
-            'items.*.gst_percentage' => 'nullable|numeric|min:0|max:100',
-            'items.*.gst_amount' => 'nullable|numeric|min:0',
-            'items.*.net_amount' => 'nullable|numeric|min:0',
+            'items.*.net_amount' => 'required|numeric|min:0',
             'subtotal' => 'required|numeric|min:0',
             'cgst_percentage' => 'nullable|numeric|min:0|max:100',
             'cgst_amount' => 'nullable|numeric|min:0',
@@ -339,50 +300,18 @@ class InvoiceController extends Controller
                 }
             }
             
-            // Get or create customer
-            if ($request->customer_id) {
-                $customer = Customer::findOrFail($request->customer_id);
-                $customer->update([
-                    'name' => $request->customer_name,
-                    'phone' => $request->customer_mobile,
-                    'email' => $request->customer_email,
-                    'address' => $request->customer_address,
-                    'gstin' => $request->customer_gstin,
-                    'state' => $request->customer_state,
-                ]);
-            } else {
-                $customer = Customer::create([
-                    'name' => $request->customer_name,
-                    'phone' => $request->customer_mobile,
-                    'email' => $request->customer_email,
-                    'address' => $request->customer_address,
-                    'gstin' => $request->customer_gstin,
-                    'state' => $request->customer_state,
-                ]);
-            }
+            // Get customer - customer_id is now required
+            $customer = Customer::findOrFail($request->customer_id);
 
-            // Get default seller details
-            $sellerDetails = $this->getDefaultSellerDetails();
             $totalTax = ($request->cgst_amount ?? 0) + ($request->sgst_amount ?? 0);
 
-            // Update invoice
+            // Update invoice - seller details come from config, not stored in DB
             $invoice->update([
                 'invoice_date' => $request->invoice_date,
-                'seller_name' => $sellerDetails['name'],
-                'seller_address' => $sellerDetails['address'],
-                'seller_email' => $sellerDetails['email'],
-                'seller_phone' => $sellerDetails['phone'],
-                'seller_gstin' => $sellerDetails['gstin'],
                 'eway_bill' => $request->eway_bill,
                 'mr_no' => $request->mr_no,
                 's_man' => $request->s_man,
-                'customer_id' => $customer->id,
-                'customer_name' => $request->customer_name,
-                'customer_mobile' => $request->customer_mobile,
-                'customer_email' => $request->customer_email,
-                'customer_address' => $request->customer_address,
-                'customer_gstin' => $request->customer_gstin,
-                'customer_state' => $request->customer_state,
+                'customer_id' => $customer->id, // Only store customer_id
                 'subtotal' => $request->subtotal,
                 'discount' => 0,
                 'tax' => $totalTax,
@@ -416,21 +345,12 @@ class InvoiceController extends Controller
                 
                 InvoiceItem::create([
                     'invoice_id' => $invoice->id,
-                    'product_id' => $item['product_id'],
-                    'product_name' => $product->name,
-                    'hsn' => $item['hsn'] ?? $product->hsn ?? '',
-                    'pack' => $item['pack'] ?? $product->pack ?? '',
+                    'product_id' => $item['product_id'], // Only store product_id
                     'quantity' => $item['quantity'],
                     'free_quantity' => $item['free_quantity'] ?? 0,
-                    'mrp' => $item['mrp'] ?? $product->mrp ?? 0,
                     'rate' => $item['rate'],
-                    'discount' => 0, // Not used, using discount_percentage
                     'discount_percentage' => $item['discount_percentage'] ?? 0,
-                    'tax' => $item['gst_amount'] ?? 0,
-                    'gst_percentage' => $item['gst_percentage'] ?? 0,
-                    'gst_amount' => $item['gst_amount'] ?? 0,
                     'net_amount' => $item['net_amount'] ?? 0,
-                    'line_total' => $lineTotal,
                 ]);
 
                 // Update product stock
@@ -536,19 +456,4 @@ class InvoiceController extends Controller
         return view('pages.inventory.invoices.print', compact('invoice'));
     }
 
-    /**
-     * Get default seller/company details
-     * TODO: Move to config file or settings table for easy management
-     */
-    private function getDefaultSellerDetails()
-    {
-        // Default seller details - can be moved to config file or database settings table
-        return [
-            'name' => 'SIDDHI AYURVEDIC',
-            'address' => 'MIDAS HEIGHTS, SECTOR-7, HDIL LAYOUT, VIRAR(W), PALGHAR-401303',
-            'email' => 'siddhiayurvedic009@gmail.com',
-            'phone' => '9021350010',
-            'gstin' => '27BXFPP6045K1Z1',
-        ];
-    }
 }
