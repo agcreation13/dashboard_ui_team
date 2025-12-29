@@ -1,0 +1,66 @@
+========================================
+AG BALAJI ERP - QUICK SETUP COMMANDS
+========================================
+
+Copy and paste these commands in order:
+
+1. Navigate to project:
+   cd D:\server\htdocs\cms\laravel\ag_balaji_erp
+
+2. Install PHP packages:
+   composer install
+
+3. Install Node packages:
+   npm install
+
+4. Create .env file (if needed):
+   copy .env.example .env
+
+5. Generate app key:
+   php artisan key:generate
+
+6. Create SQLite database:
+   php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');"
+
+7. Run migrations:
+   php artisan migrate
+
+8. Create storage link:
+   php artisan storage:link
+
+9. Clear caches:
+   php artisan config:clear
+   php artisan cache:clear
+
+10. Start server:
+    php artisan serve
+
+========================================
+OR USE AUTOMATED SCRIPT:
+========================================
+
+Just double-click: setup-new-laptop.bat
+
+This will run all commands automatically!
+
+========================================
+VERIFICATION:
+========================================
+
+Check PHP:        php --version
+Check Composer:   composer --version
+Check Node:       node --version
+Check Laravel:    php artisan --version
+
+========================================
+AFTER SETUP:
+========================================
+
+Server URL: http://localhost:8000
+
+To start anytime:
+- Double-click: start-server.bat
+- Or: php artisan serve
+
+========================================
+
