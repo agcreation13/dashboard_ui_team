@@ -53,12 +53,13 @@ class InventoryDashboardController extends Controller
 
         // Top selling products (this month)
         $topProducts = InvoiceItem::join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+                                 ->join('products', 'invoice_items.product_id', '=', 'products.id')
                                  ->whereBetween('invoices.invoice_date', [$monthStart, $monthEnd])
                                  ->where('invoices.status', 'active')
-                                 ->select('invoice_items.product_name', 
+                                 ->select('products.name as product_name', 
                                          DB::raw('SUM(invoice_items.quantity) as total_quantity'),
                                          DB::raw('SUM(invoice_items.net_amount) as total_amount'))
-                                 ->groupBy('invoice_items.product_name')
+                                 ->groupBy('products.name')
                                  ->orderBy('total_quantity', 'desc')
                                  ->limit(5)
                                  ->get();

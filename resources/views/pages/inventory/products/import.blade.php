@@ -41,9 +41,9 @@
                     <form action="{{ route('products.import.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="form-group">
-                            <label>Select Excel File <sup class="text-danger">*</sup></label>
-                            <input type="file" name="file" class="form-control" accept=".xlsx,.xls,.csv" required>
-                            <small class="text-muted">Supported formats: .xlsx, .xls, .csv (Max: 10MB)</small>
+                            <label>Select CSV/Excel File <sup class="text-danger">*</sup></label>
+                            <input type="file" name="file" class="form-control" accept=".csv,.xlsx,.xls" required>
+                            <small class="text-muted">Supported formats: .csv, .xlsx, .xls (Max: 10MB). CSV format is recommended.</small>
                             @error('file') <small class="text-danger d-block">{{ $message }}</small> @enderror
                         </div>
 
@@ -63,15 +63,23 @@
                 <div class="card-body">
                     <p><strong>Required Columns:</strong></p>
                     <ul>
-                        <li>Product Name</li>
-                        <li>Category Name</li>
-                        <li>SKU</li>
-                        <li>Purchase Price</li>
-                        <li>Selling Price</li>
-                        <li>Quantity</li>
-                        <li>Unit</li>
+                        <li><strong>Product Name</strong> (Required)</li>
+                        <li><strong>Category Name</strong> (Required - must exist in system)</li>
+                        <li><strong>SKU</strong> (Required - must be unique)</li>
+                        <li><strong>Purchase Price</strong> (Required)</li>
+                        <li><strong>Selling Price</strong> (Required)</li>
+                        <li><strong>Quantity</strong> (Required)</li>
+                        <li><strong>Unit</strong> (Required, default: pcs)</li>
                     </ul>
-                    <p class="text-muted"><small>Note: Category must exist in the system. SKU must be unique.</small></p>
+                    <p><strong>Optional Columns:</strong></p>
+                    <ul>
+                        <li>HSN</li>
+                        <li>Pack</li>
+                        <li>MRP</li>
+                        <li>GST Percentage</li>
+                        <li>Status (active/inactive, default: active)</li>
+                    </ul>
+                    <p class="text-muted"><small><strong>Note:</strong> Category must exist in the system. SKU must be unique. Download sample file for exact format.</small></p>
                 </div>
             </div>
         </div>

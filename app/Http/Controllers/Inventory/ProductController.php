@@ -6,11 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Category;
-use App\Imports\ProductsImport;
-use App\Exports\ProductsExport;
-use App\Exports\ProductsSampleExport;
-use Maatwebsite\Excel\Facades\Excel;
-use Illuminate\Support\Facades\Storage;
 use App\Traits\AuditLogTrait;
 
 class ProductController extends Controller
@@ -239,20 +234,132 @@ class ProductController extends Controller
     }
 
     /**
-     * Process Excel import
+     * Process CSV import (Excel compatible)
      */
     public function importStore(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv|max:10240',
+            'file' => 'required|mimes:csv,txt,xlsx,xls|max:10240',
         ]);
 
         try {
-            $import = new ProductsImport();
-            Excel::import($import, $request->file('file'));
+            $errors = [];
+            $successCount = 0;
+            $rowNumber = 1;
 
-            $successCount = $import->getSuccessCount();
-            $errors = $import->getErrors();
+            $file = $request->file('file');
+            $handle = fopen($file->getRealPath(), 'r');
+            
+            // Skip BOM if present
+            $bom = fread($handle, 3);
+            if ($bom !== chr(0xEF).chr(0xBB).chr(0xBF)) {
+                rewind($handle);
+            }
+
+            // Read header row
+            $headers = fgetcsv($handle);
+            if (!$headers) {
+                throw new \Exception('Invalid file format. Please check the file.');
+            }
+
+            // Normalize headers (remove spaces, convert to lowercase)
+            $headerMap = [];
+            foreach ($headers as $index => $header) {
+                $normalized = strtolower(trim($header));
+                $headerMap[$normalized] = $index;
+            }
+
+            // Process data rows
+            while (($row = fgetcsv($handle)) !== false) {
+                $rowNumber++;
+                
+                // Skip empty rows
+                if (empty(array_filter($row))) {
+                    continue;
+                }
+
+                try {
+                    // Get values by header name
+                    $getValue = function($key) use ($row, $headerMap) {
+                        $normalized = strtolower(trim($key));
+                        $index = $headerMap[$normalized] ?? null;
+                        return $index !== null && isset($row[$index]) ? trim($row[$index]) : '';
+                    };
+
+                    // Validate required fields
+                    $productName = $getValue('Product Name');
+                    if (empty($productName)) {
+                        $errors[] = "Row {$rowNumber}: Product Name is required. Skipping.";
+                        continue;
+                    }
+
+                    $categoryName = $getValue('Category Name');
+                    if (empty($categoryName)) {
+                        $errors[] = "Row {$rowNumber}: Category Name is required. Skipping.";
+                        continue;
+                    }
+                    
+                    $category = Category::where('name', $categoryName)->first();
+                    if (!$category) {
+                        $errors[] = "Row {$rowNumber}: Category '{$categoryName}' not found. Skipping.";
+                        continue;
+                    }
+
+                    $sku = $getValue('SKU');
+                    if (empty($sku)) {
+                        $errors[] = "Row {$rowNumber}: SKU is required. Skipping.";
+                        continue;
+                    }
+                    
+                    if (Product::where('sku', $sku)->exists()) {
+                        $errors[] = "Row {$rowNumber}: SKU '{$sku}' already exists. Skipping.";
+                        continue;
+                    }
+
+                    // Validate numeric fields
+                    $purchasePrice = (float) $getValue('Purchase Price');
+                    $sellingPrice = (float) $getValue('Selling Price');
+                    
+                    if ($purchasePrice < 0) {
+                        $errors[] = "Row {$rowNumber}: Purchase Price must be >= 0. Skipping.";
+                        continue;
+                    }
+                    
+                    if ($sellingPrice < 0) {
+                        $errors[] = "Row {$rowNumber}: Selling Price must be >= 0. Skipping.";
+                        continue;
+                    }
+
+                    $gstPercentage = $getValue('GST Percentage');
+                    $gstPercentage = !empty($gstPercentage) ? (float) $gstPercentage : 0;
+                    if ($gstPercentage < 0 || $gstPercentage > 100) {
+                        $errors[] = "Row {$rowNumber}: GST Percentage must be between 0 and 100. Skipping.";
+                        continue;
+                    }
+
+                    // Create product
+                    Product::create([
+                        'name' => $productName,
+                        'category_id' => $category->id,
+                        'sku' => $sku,
+                        'hsn' => $getValue('HSN') ?: null,
+                        'pack' => $getValue('Pack') ?: null,
+                        'purchase_price' => $purchasePrice,
+                        'selling_price' => $sellingPrice,
+                        'mrp' => $getValue('MRP') ? (float) $getValue('MRP') : null,
+                        'gst_percentage' => $gstPercentage,
+                        'quantity' => max(0, (int) $getValue('Quantity')),
+                        'unit' => $getValue('Unit') ?: 'pcs',
+                        'status' => in_array(strtolower($getValue('Status')), ['active', 'inactive']) ? strtolower($getValue('Status')) : 'active',
+                    ]);
+
+                    $successCount++;
+                } catch (\Exception $e) {
+                    $errors[] = "Row {$rowNumber}: " . $e->getMessage();
+                }
+            }
+
+            fclose($handle);
 
             $message = "Successfully imported {$successCount} product(s).";
             if (!empty($errors)) {
@@ -281,21 +388,173 @@ class ProductController extends Controller
         $status = $request->get('status');
         $stockFilter = $request->get('stock_filter');
 
-        return Excel::download(
-            new ProductsExport($categoryId, $status, $stockFilter),
-            'products-' . date('Y-m-d') . '.xlsx'
-        );
+        $query = Product::with('category');
+
+        if ($categoryId) {
+            $query->where('category_id', $categoryId);
+        }
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        if ($stockFilter === 'low') {
+            $query->where('quantity', '<=', 10);
+        } elseif ($stockFilter === 'out') {
+            $query->where('quantity', '<=', 0);
+        } elseif ($stockFilter === 'in_stock') {
+            $query->where('quantity', '>', 0);
+        }
+
+        $products = $query->get();
+
+        $filename = 'products-' . date('Y-m-d') . '.xls';
+        
+        $headers = [
+            'Content-Type' => 'application/vnd.ms-excel',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function() use ($products) {
+            $file = fopen('php://output', 'w');
+            
+            // Excel XML header
+            fwrite($file, '<?xml version="1.0"?>' . "\n");
+            fwrite($file, '<?mso-application progid="Excel.Sheet"?>' . "\n");
+            fwrite($file, '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"' . "\n");
+            fwrite($file, ' xmlns:o="urn:schemas-microsoft-com:office:office"' . "\n");
+            fwrite($file, ' xmlns:x="urn:schemas-microsoft-com:office:excel"' . "\n");
+            fwrite($file, ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"' . "\n");
+            fwrite($file, ' xmlns:html="http://www.w3.org/TR/REC-html40">' . "\n");
+            
+            // Styles
+            fwrite($file, '<Styles>' . "\n");
+            fwrite($file, '<Style ss:ID="Header">' . "\n");
+            fwrite($file, '<Font ss:Bold="1"/>' . "\n");
+            fwrite($file, '</Style>' . "\n");
+            fwrite($file, '</Styles>' . "\n");
+            
+            // Worksheet
+            fwrite($file, '<Worksheet ss:Name="Products">' . "\n");
+            fwrite($file, '<Table>' . "\n");
+            
+            // Helper function to escape XML
+            $escape = function($value) {
+                return htmlspecialchars($value, ENT_XML1, 'UTF-8');
+            };
+            
+            // Headers row with bold style
+            fwrite($file, '<Row>' . "\n");
+            $headers = ['SR No', 'Product Name', 'Category Name', 'SKU', 'HSN', 'Pack', 'Purchase Price', 'Selling Price', 'MRP', 'GST Percentage', 'Quantity', 'Unit', 'Status'];
+            foreach ($headers as $header) {
+                fwrite($file, '<Cell ss:StyleID="Header"><Data ss:Type="String">' . $escape($header) . '</Data></Cell>' . "\n");
+            }
+            fwrite($file, '</Row>' . "\n");
+
+            // Data rows
+            $srNo = 1;
+            foreach ($products as $product) {
+                fwrite($file, '<Row>' . "\n");
+                
+                $rowData = [
+                    $srNo++,
+                    $product->name,
+                    $product->category->name ?? 'N/A',
+                    $product->sku,
+                    $product->hsn ?? '',
+                    $product->pack ?? '',
+                    $product->purchase_price,
+                    $product->selling_price,
+                    $product->mrp ?? '',
+                    $product->gst_percentage ?? 0,
+                    $product->quantity,
+                    $product->unit,
+                    $product->status,
+                ];
+                
+                foreach ($rowData as $index => $value) {
+                    $type = is_numeric($value) ? 'Number' : 'String';
+                    fwrite($file, '<Cell><Data ss:Type="' . $type . '">' . $escape($value) . '</Data></Cell>' . "\n");
+                }
+                
+                fwrite($file, '</Row>' . "\n");
+            }
+            
+            fwrite($file, '</Table>' . "\n");
+            fwrite($file, '</Worksheet>' . "\n");
+            fwrite($file, '</Workbook>' . "\n");
+            
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     /**
-     * Download sample Excel template
+     * Download sample CSV template (Excel compatible)
      */
     public function downloadSample()
     {
-        return Excel::download(
-            new ProductsSampleExport(),
-            'products-sample-' . date('Y-m-d') . '.xlsx'
-        );
+        $filename = 'products-sample-' . date('Y-m-d') . '.xls';
+        
+        $headers = [
+            'Content-Type' => 'application/vnd.ms-excel',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function() {
+            $file = fopen('php://output', 'w');
+            
+            // Excel XML header
+            fwrite($file, '<?xml version="1.0"?>' . "\n");
+            fwrite($file, '<?mso-application progid="Excel.Sheet"?>' . "\n");
+            fwrite($file, '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"' . "\n");
+            fwrite($file, ' xmlns:o="urn:schemas-microsoft-com:office:office"' . "\n");
+            fwrite($file, ' xmlns:x="urn:schemas-microsoft-com:office:excel"' . "\n");
+            fwrite($file, ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"' . "\n");
+            fwrite($file, ' xmlns:html="http://www.w3.org/TR/REC-html40">' . "\n");
+            
+            // Styles
+            fwrite($file, '<Styles>' . "\n");
+            fwrite($file, '<Style ss:ID="Header">' . "\n");
+            fwrite($file, '<Font ss:Bold="1"/>' . "\n");
+            fwrite($file, '</Style>' . "\n");
+            fwrite($file, '</Styles>' . "\n");
+            
+            // Worksheet
+            fwrite($file, '<Worksheet ss:Name="Sample">' . "\n");
+            fwrite($file, '<Table>' . "\n");
+            
+            // Helper function to escape XML
+            $escape = function($value) {
+                return htmlspecialchars($value, ENT_XML1, 'UTF-8');
+            };
+            
+            // Headers row with bold style
+            fwrite($file, '<Row>' . "\n");
+            $headers = ['SR No', 'Product Name', 'Category Name', 'SKU', 'HSN', 'Pack', 'Purchase Price', 'Selling Price', 'MRP', 'GST Percentage', 'Quantity', 'Unit', 'Status'];
+            foreach ($headers as $header) {
+                fwrite($file, '<Cell ss:StyleID="Header"><Data ss:Type="String">' . $escape($header) . '</Data></Cell>' . "\n");
+            }
+            fwrite($file, '</Row>' . "\n");
+
+            // Sample data row
+            fwrite($file, '<Row>' . "\n");
+            $sampleData = [1, 'Sample Product', 'Electronics', 'SKU001', '12345678', '1 Box', 100.00, 150.00, 180.00, 18.00, 50, 'pcs', 'active'];
+            foreach ($sampleData as $value) {
+                $type = is_numeric($value) ? 'Number' : 'String';
+                fwrite($file, '<Cell><Data ss:Type="' . $type . '">' . $escape($value) . '</Data></Cell>' . "\n");
+            }
+            fwrite($file, '</Row>' . "\n");
+            
+            fwrite($file, '</Table>' . "\n");
+            fwrite($file, '</Worksheet>' . "\n");
+            fwrite($file, '</Workbook>' . "\n");
+            
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     /**

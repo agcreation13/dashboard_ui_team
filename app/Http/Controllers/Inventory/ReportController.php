@@ -97,10 +97,11 @@ class ReportController extends Controller
 
         // Top selling products
         $topProducts = InvoiceItem::join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+                                  ->join('products', 'invoice_items.product_id', '=', 'products.id')
                                   ->whereBetween('invoices.invoice_date', [$startDate, $endDate])
                                   ->where('invoices.status', 'active')
-                                  ->select('invoice_items.product_name', DB::raw('SUM(invoice_items.quantity) as total_quantity'), DB::raw('SUM(invoice_items.line_total) as total_amount'))
-                                  ->groupBy('invoice_items.product_name')
+                                  ->select('products.name as product_name', DB::raw('SUM(invoice_items.quantity) as total_quantity'), DB::raw('SUM(invoice_items.net_amount) as total_amount'))
+                                  ->groupBy('products.name')
                                   ->orderBy('total_quantity', 'desc')
                                   ->limit(10)
                                   ->get();

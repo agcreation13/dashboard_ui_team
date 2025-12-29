@@ -46,25 +46,35 @@ class ProductsExport implements FromCollection, WithHeadings, WithMapping
     public function headings(): array
     {
         return [
+            'Sr',
             'Product Name',
             'Category Name',
             'SKU',
+            'HSN',
+            'Pack',
             'Purchase Price',
             'Selling Price',
+            'MRP',
+            'GST Percentage',
             'Quantity',
             'Unit',
             'Status',
         ];
     }
 
-    public function map($product): array
+    public function map($product, $index): array
     {
         return [
+            $index + 1,
             $product->name,
             $product->category->name ?? 'N/A',
             $product->sku,
+            $product->hsn ?? '',
+            $product->pack ?? '',
             $product->purchase_price,
             $product->selling_price,
+            $product->mrp ?? '',
+            $product->gst_percentage ?? 0,
             $product->quantity,
             $product->unit,
             $product->status,
