@@ -63,6 +63,13 @@ Route::middleware(['auth', 'check.permission'])->group(function () {
    ]);
 
    // Inventory - Products
+   // Define specific routes BEFORE resource route to avoid conflicts
+   Route::get('inventory/products/import', [ProductController::class, 'import'])->name('products.import');
+   Route::post('inventory/products/import', [ProductController::class, 'importStore'])->name('products.import.store');
+   Route::get('inventory/products/export', [ProductController::class, 'export'])->name('products.export');
+   Route::get('inventory/products/sample', [ProductController::class, 'downloadSample'])->name('products.sample');
+   Route::put('inventory/products/{id}/stock', [ProductController::class, 'updateStock'])->name('products.updateStock');
+   
    Route::resource('inventory/products', ProductController::class)->names([
        'index' => 'products.index',
        'create' => 'products.create',
@@ -72,11 +79,6 @@ Route::middleware(['auth', 'check.permission'])->group(function () {
        'update' => 'products.update',
        'destroy' => 'products.destroy',
    ]);
-   Route::get('inventory/products/import', [ProductController::class, 'import'])->name('products.import');
-   Route::post('inventory/products/import', [ProductController::class, 'importStore'])->name('products.import.store');
-   Route::get('inventory/products/export', [ProductController::class, 'export'])->name('products.export');
-   Route::get('inventory/products/sample', [ProductController::class, 'downloadSample'])->name('products.sample');
-  Route::put('inventory/products/{id}/stock', [ProductController::class, 'updateStock'])->name('products.updateStock');
 
    // Inventory - Customers
    Route::resource('inventory/customers', CustomerController::class)->names([
